@@ -47,7 +47,7 @@ $payload = [
     "contents" => [
         [
             "parts" => [
-                ["text" => "Jawab singkat padat dan jelas. ". $contextMessage]
+                ["text" => "Tolong jawab dengan singkat,padat,dan jelas.\n". $contextMessage]
             ]
         ]
     ]
@@ -70,8 +70,45 @@ curl_close($ch);
 $responseData = json_decode($response, true);
 if (isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
     $botReply = $responseData['candidates'][0]['content']['parts'][0]['text'];
+    
+    // Clean up the response: remove "Assistant:" prefix if present
+    $botReply = cleanResponse($botReply);
+    
     echo json_encode(['reply' => $botReply]);
 } else {
     echo json_encode(['error' => 'Failed to get a response from the AI model']);
+}
+
+/**
+ * Clean up AI response by removing common prefixes
+ * @param string $response The raw AI response
+ * @return string The cleaned response
+ */
+function cleanResponse($response) {
+    // Trim whitespace
+    $response = trim($response);
+    
+    // Remove "Assistant:" prefix if present (case-insensitive)
+    if (preg_match('/^Assistant:\s*/i', $response)) {
+        $response = preg_replace('/^Assistant:\s*/i', '', $response);
+    }
+    
+    // Remove other common prefixes that might appear
+    $prefixes = [
+        'AI:',
+        'Bot:',
+        'Chatbot:',
+        'System:'
+    ];
+    
+    foreach ($prefixes as $prefix) {
+        if (stripos($response, $prefix) === 0) {
+            $response = substr($response, strlen($prefix));
+            break;
+        }
+    }
+    
+    // Trim again after prefix removal
+    return trim($response);
 }
 ?>
