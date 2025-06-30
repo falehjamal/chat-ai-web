@@ -135,43 +135,63 @@
         #chat-box {
             height: calc(90vh - 80px);
         }
+
+        .progress-info {
+            min-width: 120px;
+        }
+
+        .progress-text {
+            font-size: 11px;
+        }
+
+        .progress-percentage {
+            font-size: 13px;
+        }
     }
 
-    /* Loading indicator */
-    #ocr-loading {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.7);
+    /* OCR Progress Bar */
+    #ocr-progress {
         display: none;
-        justify-content: center;
+        padding: 12px 16px;
+        background: #f8fafc;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .progress-container {
+        display: flex;
         align-items: center;
-        z-index: 1001;
+        gap: 12px;
     }
 
-    #ocr-loading-content {
-        background: white;
-        padding: 32px;
-        border-radius: 12px;
-        text-align: center;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    .progress-info {
+        min-width: 140px;
     }
 
-    .loading-spinner {
-        border: 3px solid #f3f3f3;
-        border-top: 3px solid #2563eb;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 16px;
+    .progress-text {
+        font-size: 12px;
+        color: #6b7280;
+        margin-bottom: 2px;
     }
 
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+    .progress-percentage {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .progress-bar {
+        flex: 1;
+        height: 6px;
+        background: #e5e7eb;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #2563eb, #3b82f6);
+        width: 0%;
+        transition: width 0.3s ease;
     }
 </style>
 <body>
@@ -181,14 +201,16 @@
             <textarea id="user-input" placeholder="Type your message..." rows="1"></textarea>
             <button id="send-btn">Send</button>
         </div>
-    </div>
-
-    <!-- OCR Loading -->
-    <div id="ocr-loading">
-        <div id="ocr-loading-content">
-            <div class="loading-spinner"></div>
-            <h3>Mengekstrak teks dari gambar...</h3>
-            <p>Mohon tunggu, proses ini mungkin memakan beberapa detik.</p>
+        <div id="ocr-progress">
+            <div class="progress-container">
+                <div class="progress-info">
+                    <div class="progress-text" id="ocr-progress-text">Memulai proses...</div>
+                    <div class="progress-percentage" id="ocr-progress-percentage">0%</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="ocr-progress-fill"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -202,7 +224,7 @@
         let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
         
         // OCR variables
-        const ocrLoading = document.getElementById('ocr-loading');
+        const ocrProgress = document.getElementById('ocr-progress');
 
         displayChatHistory();
         
@@ -225,12 +247,21 @@
             return chatHistory.slice(-MAX_HISTORY);
         }
 
-        function showOCRLoading() {
-            ocrLoading.style.display = 'flex';
+        function showOCRProgress() {
+            // Reset progress bar
+            const progressText = document.getElementById('ocr-progress-text');
+            const progressFill = document.getElementById('ocr-progress-fill');
+            const progressPercentage = document.getElementById('ocr-progress-percentage');
+            
+            progressText.textContent = 'Memulai proses...';
+            progressFill.style.width = '0%';
+            progressPercentage.textContent = '0%';
+            
+            ocrProgress.style.display = 'block';
         }
 
-        function hideOCRLoading() {
-            ocrLoading.style.display = 'none';
+        function hideOCRProgress() {
+            ocrProgress.style.display = 'none';
         }
 
         // Auto-resize textarea function
@@ -242,17 +273,35 @@
 
         async function performOCR(imageData) {
             try {
-                showOCRLoading();
+                showOCRProgress();
+
+                const progressText = document.getElementById('ocr-progress-text');
+                const progressFill = document.getElementById('ocr-progress-fill');
+                const progressPercentage = document.getElementById('ocr-progress-percentage');
 
                 const { data: { text } } = await Tesseract.recognize(
                     imageData,
                     'ind+eng', // Indonesian and English
                     {
-                        logger: m => console.log(m) // Optional: show progress in console
+                        logger: m => {
+                            console.log(m);
+                            
+                            // Update progress berdasarkan status
+                            if (m.status) {
+                                progressText.textContent = getProgressMessage(m.status);
+                            }
+                            
+                            // Update progress bar jika ada progress
+                            if (m.progress !== undefined) {
+                                const percentage = Math.round(m.progress * 100);
+                                progressFill.style.width = percentage + '%';
+                                progressPercentage.textContent = percentage + '%';
+                            }
+                        }
                     }
                 );
 
-                hideOCRLoading();
+                hideOCRProgress();
                 
                 // Clean up the extracted text while preserving line breaks
                 const cleanText = text.trim()
@@ -268,10 +317,22 @@
                 }
 
             } catch (error) {
-                hideOCRLoading();
+                hideOCRProgress();
                 console.error('OCR Error:', error);
                 alert('Terjadi kesalahan saat memproses gambar. Silakan coba lagi.');
             }
+        }
+
+        function getProgressMessage(status) {
+            const messages = {
+                'loading tesseract core': 'Memuat Tesseract...',
+                'initializing tesseract': 'Menginisialisasi Tesseract...',
+                'loading language traineddata': 'Memuat data bahasa...',
+                'initializing api': 'Menginisialisasi API...',
+                'recognizing text': 'Mengenali teks...',
+                'done': 'Selesai!'
+            };
+            return messages[status] || 'Memproses...';
         }
 
         // Handle paste event
