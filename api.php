@@ -47,7 +47,7 @@ $payload = [
     "contents" => [
         [
             "parts" => [
-                ["text" => $contextMessage]
+                ["text" => "Jawab singkat padat dan jelas. ". $contextMessage]
             ]
         ]
     ]

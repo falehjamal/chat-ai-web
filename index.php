@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat AI</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/tesseract.js@v2.1.5/dist/tesseract.min.js"></script>
 </head>
 <style>
     * {
@@ -92,7 +93,13 @@
         border-radius: 8px;
         margin-right: 12px;
         font-size: 16px;
+        font-family: 'Inter', sans-serif;
         transition: border-color 0.3s ease;
+        resize: none;
+        overflow-y: hidden;
+        min-height: 20px;
+        max-height: 120px;
+        line-height: 1.4;
     }
 
     #user-input:focus {
@@ -129,13 +136,59 @@
             height: calc(90vh - 80px);
         }
     }
+
+    /* Loading indicator */
+    #ocr-loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1001;
+    }
+
+    #ocr-loading-content {
+        background: white;
+        padding: 32px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .loading-spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #2563eb;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
 </style>
 <body>
     <div id="chat-container">
         <div id="chat-box"></div>
         <div id="input-container">
-            <input type="text" id="user-input" placeholder="Type your message..." />
+            <textarea id="user-input" placeholder="Type your message..." rows="1"></textarea>
             <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <!-- OCR Loading -->
+    <div id="ocr-loading">
+        <div id="ocr-loading-content">
+            <div class="loading-spinner"></div>
+            <h3>Mengekstrak teks dari gambar...</h3>
+            <p>Mohon tunggu, proses ini mungkin memakan beberapa detik.</p>
         </div>
     </div>
 
@@ -147,7 +200,14 @@
 
         // Load chat history from localStorage
         let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+        
+        // OCR variables
+        const ocrLoading = document.getElementById('ocr-loading');
+
         displayChatHistory();
+        
+        // Initialize textarea auto-resize
+        autoResizeTextarea(userInput);
 
         function displayChatHistory() {
             chatBox.innerHTML = '';
@@ -165,6 +225,78 @@
             return chatHistory.slice(-MAX_HISTORY);
         }
 
+        function showOCRLoading() {
+            ocrLoading.style.display = 'flex';
+        }
+
+        function hideOCRLoading() {
+            ocrLoading.style.display = 'none';
+        }
+
+        // Auto-resize textarea function
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            const newHeight = Math.min(textarea.scrollHeight, 120); // max-height: 120px
+            textarea.style.height = newHeight + 'px';
+        }
+
+        async function performOCR(imageData) {
+            try {
+                showOCRLoading();
+
+                const { data: { text } } = await Tesseract.recognize(
+                    imageData,
+                    'ind+eng', // Indonesian and English
+                    {
+                        logger: m => console.log(m) // Optional: show progress in console
+                    }
+                );
+
+                hideOCRLoading();
+                
+                // Clean up the extracted text while preserving line breaks
+                const cleanText = text.trim()
+                    .replace(/\n{3,}/g, '\n\n') // Replace 3+ consecutive newlines with 2
+                    .replace(/[ \t]+$/gm, ''); // Remove trailing spaces/tabs from each line
+                
+                if (cleanText) {
+                    userInput.value = cleanText;
+                    autoResizeTextarea(userInput);
+                    userInput.focus();
+                } else {
+                    alert('Tidak dapat mengekstrak teks dari gambar. Pastikan gambar memiliki teks yang jelas.');
+                }
+
+            } catch (error) {
+                hideOCRLoading();
+                console.error('OCR Error:', error);
+                alert('Terjadi kesalahan saat memproses gambar. Silakan coba lagi.');
+            }
+        }
+
+        // Handle paste event
+        userInput.addEventListener('paste', async (e) => {
+            const items = e.clipboardData.items;
+            
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                
+                if (item.type.indexOf('image') !== -1) {
+                    e.preventDefault(); // Prevent default paste behavior
+                    
+                    const blob = item.getAsFile();
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(event) {
+                        performOCR(event.target.result);
+                    };
+                    
+                    reader.readAsDataURL(blob);
+                    break;
+                }
+            }
+        });
+
         function sendMessage() {
             const userMessage = userInput.value.trim();
             if (!userMessage) return;
@@ -176,6 +308,7 @@
 
             // Clear input field
             userInput.value = '';
+            autoResizeTextarea(userInput);
 
             // Get recent chat history for context
             const recentHistory = getRecentHistory();
@@ -208,8 +341,16 @@
         }
 
         sendBtn.addEventListener('click', sendMessage);
-        userInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
+        
+        // Auto-resize textarea on input
+        userInput.addEventListener('input', () => {
+            autoResizeTextarea(userInput);
+        });
+
+        // Handle Enter key for textarea (Enter to send, Shift+Enter for new line)
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 sendMessage();
             }
         });
