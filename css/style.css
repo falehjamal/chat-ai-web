@@ -58,8 +58,8 @@ body {
 }
 
 .user {
-    background: #2563eb;
-    color: white;
+    background: #f3f4f6;
+    color: #1f2937;
     margin-left: auto;
 }
 
@@ -198,22 +198,50 @@ body {
     font-size: 16px;
 }
 
+#clear-btn {
+    background: white;
+    color: #dc2626;
+    border: 2px solid #e5e7eb;
+    padding: 8px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    height: 44px;
+    width: 44px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+#clear-btn:hover {
+    background: #fef2f2;
+    border-color: #dc2626;
+    color: #b91c1c;
+}
+
+#clear-btn:active {
+    transform: scale(0.98);
+}
+
 #send-btn {
-    background: #2563eb;
-    color: white;
-    border: none;
+    background: white;
+    color: #1f2937;
+    border: 2px solid #e5e7eb;
     padding: 12px 20px;
     border-radius: 20px;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
     height: 44px;
     min-width: 60px;
     flex-shrink: 0;
 }
 
 #send-btn:hover {
-    background: #1d4ed8;
+    background: #f9fafb;
+    border-color: #d1d5db;
 }
 
 #send-btn:active {
@@ -239,6 +267,12 @@ body {
         padding: 10px 14px;
         min-height: 40px;
         max-height: 120px;
+    }
+
+    #clear-btn {
+        height: 40px;
+        width: 40px;
+        font-size: 14px;
     }
 
     #send-btn {
@@ -268,6 +302,82 @@ body {
     .typing-dot {
         width: 5px;
         height: 5px;
+    }
+}
+
+/* Media query untuk browser/device paling kecil */
+@media (max-width: 480px) {
+    #chat-container {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        max-width: none;
+    }
+
+    #chat-box {
+        height: calc(100vh - 100px);
+        padding: 12px;
+    }
+
+    #input-container {
+        padding: 8px;
+        gap: 8px;
+    }
+
+    #user-input {
+        font-size: 16px;
+        padding: 8px 12px;
+        min-height: 36px;
+        max-height: 100px;
+        border-radius: 18px;
+    }
+
+    #clear-btn {
+        height: 36px;
+        width: 36px;
+        font-size: 13px;
+        border-radius: 18px;
+    }
+
+    #send-btn {
+        height: 36px;
+        padding: 8px 12px;
+        min-width: 45px;
+        border-radius: 18px;
+        font-size: 14px;
+    }
+
+    .user, .bot {
+        padding: 10px 12px;
+        max-width: 85%;
+        font-size: 15px;
+        border-radius: 10px;
+    }
+
+    .typing-indicator {
+        max-width: 60px;
+        padding: 8px 12px;
+    }
+
+    .typing-dot {
+        width: 4px;
+        height: 4px;
+    }
+
+    .progress-info {
+        min-width: 100px;
+    }
+
+    .progress-text {
+        font-size: 10px;
+    }
+
+    .progress-percentage {
+        font-size: 12px;
+    }
+
+    #ocr-progress {
+        padding: 8px 12px;
     }
 }
 

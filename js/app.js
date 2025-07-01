@@ -295,8 +295,66 @@ $(document).ready(function() {
         });
     }
 
+    // Function to clear storage and cache
+    function clearStorageAndCache() {
+        if (confirm('Apakah Anda yakin ingin menghapus semua riwayat chat dan cache? Tindakan ini tidak dapat dibatalkan.')) {
+            try {
+                // Clear localStorage
+                localStorage.clear();
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                
+                // Clear chat history array
+                chatHistory = [];
+                
+                // Clear chat display
+                $chatBox.empty();
+                
+                // Clear service worker cache if available
+                if ('caches' in window) {
+                    caches.keys().then(function(cacheNames) {
+                        return Promise.all(
+                            cacheNames.map(function(cacheName) {
+                                return caches.delete(cacheName);
+                            })
+                        );
+                    }).then(function() {
+                        console.log('Cache cleared successfully');
+                    }).catch(function(error) {
+                        console.log('Error clearing cache:', error);
+                    });
+                }
+                
+                // Clear indexedDB if needed
+                if ('indexedDB' in window) {
+                    // Most basic clear - can be extended if app uses indexedDB
+                    try {
+                        indexedDB.deleteDatabase('tesseract-cache');
+                    } catch (e) {
+                        console.log('No indexedDB to clear or error:', e);
+                    }
+                }
+                
+                // Show success message
+                alert('Semua data berhasil dihapus! Halaman akan di-refresh.');
+                
+                // Reload page to ensure complete cleanup
+                window.location.reload();
+                
+            } catch (error) {
+                console.error('Error clearing storage:', error);
+                alert('Terjadi kesalahan saat menghapus data. Silakan coba lagi.');
+            }
+        }
+    }
+
     // Event handlers
     $sendBtn.on('click', sendMessage);
+    
+    // Cache jQuery object for clear button
+    const $clearBtn = $('#clear-btn');
+    $clearBtn.on('click', clearStorageAndCache);
     
     // Auto-resize textarea on input (seperti WhatsApp)
     $userInput.on('input propertychange', function() {

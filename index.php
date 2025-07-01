@@ -12,6 +12,7 @@
         <div id="chat-box"></div>
         <div id="input-container">
             <textarea id="user-input" placeholder="Type your message..." rows="1"></textarea>
+            <button id="clear-btn" title="Hapus riwayat chat dan cache">🗑️</button>
             <button id="send-btn">Send</button>
         </div>
         <div id="ocr-progress">

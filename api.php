@@ -1,23 +1,32 @@
 <?php
-header('Content-Type: application/json');
-
 // Load environment helper
 require_once 'env_helper.php';
+
+header('Content-Type: application/json');
 
 try {
     // Load environment variables
     loadEnv();
 } catch (Exception $e) {
-    echo json_encode(['error' => 'Gagal memuat konfigurasi: ' . $e->getMessage()]);
+    echo json_encode(['error' => 'Gagal memuat konfigurasi']);
     exit;
 }
 
-// Get the incoming message and history from the frontend
-$data = json_decode(file_get_contents('php://input'), true);
+// Get and validate the incoming data
+$rawInput = file_get_contents('php://input');
+$data = json_decode($rawInput, true);
+
+// Validate JSON
+if (json_last_error() !== JSON_ERROR_NONE) {
+    echo json_encode(['error' => 'Invalid JSON data']);
+    exit;
+}
+
+// Get inputs directly
 $userMessage = $data['message'] ?? '';
 $chatHistory = $data['history'] ?? [];
 
-if (!$userMessage) {
+if (empty($userMessage)) {
     echo json_encode(['error' => 'No message provided']);
     exit;
 }
@@ -26,16 +35,25 @@ if (!$userMessage) {
 $contextMessage = "";
 if (!empty($chatHistory)) {
     foreach ($chatHistory as $msg) {
+        if (!is_array($msg) || !isset($msg['sender']) || !isset($msg['text'])) {
+            continue;
+        }
+        
+        $historyText = $msg['text'];
+        if (empty($historyText)) {
+            continue;
+        }
+        
         $role = ($msg['sender'] == 'user') ? 'User' : 'Assistant';
-        $contextMessage .= "$role: " . $msg['text'] . "\n";
+        $contextMessage .= "$role: " . $historyText . "\n";
     }
 }
 $contextMessage .= "User: " . $userMessage;
 
 // Get API key from environment
 $apiKey = getEnvironmentVar('GEMINI_API_KEY');
-if (!$apiKey) {
-    echo json_encode(['error' => 'API Key Gemini tidak ditemukan dalam konfigurasi']);
+if (!$apiKey || $apiKey === 'your_gemini_api_key_here') {
+    echo json_encode(['error' => 'API Key tidak dikonfigurasi dengan benar']);
     exit;
 }
 
@@ -59,24 +77,56 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Content-Type: application/json'
+    'Content-Type: application/json',
+    'User-Agent: ChatAI-Web/1.0'
 ]);
+
+// Basic timeout settings
+curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
 
 // Execute the request
 $response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlError = curl_error($ch);
 curl_close($ch);
+
+// Check for cURL errors
+if ($response === false || !empty($curlError)) {
+    echo json_encode(['error' => 'Gagal menghubungi layanan AI. Silakan coba lagi.']);
+    exit;
+}
+
+// Check HTTP status code
+if ($httpCode !== 200) {
+    echo json_encode(['error' => 'Layanan AI sedang tidak tersedia. Silakan coba lagi.']);
+    exit;
+}
 
 // Parse the response
 $responseData = json_decode($response, true);
+
+// Check for JSON parsing errors
+if (json_last_error() !== JSON_ERROR_NONE) {
+    echo json_encode(['error' => 'Gagal memproses respons dari AI']);
+    exit;
+}
+
+// Check if response has expected structure
 if (isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
     $botReply = $responseData['candidates'][0]['content']['parts'][0]['text'];
     
-    // Clean up the response: remove "Assistant:" prefix if present
+    // Clean up the response
     $botReply = cleanResponse($botReply);
+    
+    if (empty($botReply)) {
+        echo json_encode(['error' => 'Respons AI kosong atau tidak valid']);
+        exit;
+    }
     
     echo json_encode(['reply' => $botReply]);
 } else {
-    echo json_encode(['error' => 'Failed to get a response from the AI model']);
+    echo json_encode(['error' => 'Gagal mendapatkan respons dari AI']);
 }
 
 /**
