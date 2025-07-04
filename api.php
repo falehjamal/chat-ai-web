@@ -2,13 +2,20 @@
 // Load environment helper
 require_once 'env_helper.php';
 
+// Load database helper
+require_once 'database.php';
+
 header('Content-Type: application/json');
 
 try {
     // Load environment variables
     loadEnv();
+    
+    // Inisialisasi database dan buat tabel jika diperlukan
+    $database = getChatDatabase();
+    $database->initialize();
 } catch (Exception $e) {
-    echo json_encode(['error' => 'Gagal memuat konfigurasi']);
+    echo json_encode(['error' => 'Gagal memuat konfigurasi: ' . $e->getMessage()]);
     exit;
 }
 
@@ -122,6 +129,15 @@ if (isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
     if (empty($botReply)) {
         echo json_encode(['error' => 'Respons AI kosong atau tidak valid']);
         exit;
+    }
+    
+    // Simpan percakapan ke database
+    try {
+        $ipAddress = Database::getRealIpAddress();
+        $database->saveChatHistory($userMessage, $botReply, $ipAddress);
+    } catch (Exception $e) {
+        // Log error tetapi tetap lanjutkan response
+        error_log("Gagal menyimpan chat history: " . $e->getMessage());
     }
     
     echo json_encode(['reply' => $botReply]);
