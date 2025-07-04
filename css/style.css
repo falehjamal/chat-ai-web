@@ -4,10 +4,17 @@
     box-sizing: border-box;
 }
 
+html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
 body {
     font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    height: 100vh;
+    background: #f8fafc;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -15,18 +22,24 @@ body {
 
 #chat-container {
     width: 90%;
-    max-width: 600px;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    max-width: 900px;
+    height: 85vh;
+    max-height: 700px;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    margin: 20px;
 }
 
 #chat-box {
-    height: 70vh;
-    padding: 20px;
+    flex: 1;
+    padding: 16px 20px;
     overflow-y: auto;
     background: #ffffff;
+    scroll-behavior: smooth;
 }
 
 #chat-box::-webkit-scrollbar {
@@ -43,13 +56,15 @@ body {
 }
 
 .user, .bot {
-    margin: 8px 0;
+    margin: 12px 0;
     padding: 12px 16px;
-    border-radius: 12px;
-    max-width: 80%;
+    border-radius: 18px;
+    max-width: 85%;
     word-wrap: break-word;
     position: relative;
     animation: fadeIn 0.3s ease-out;
+    font-size: 15px;
+    line-height: 1.5;
 }
 
 @keyframes fadeIn {
@@ -58,17 +73,19 @@ body {
 }
 
 .user {
-    background: #f3f4f6;
-    color: #1f2937;
+    background: #f0f0f0;
+    color: #2d3748;
     margin-left: auto;
+    border: 1px solid #e2e8f0;
 }
 
 .bot {
-    background: #f3f4f6;
-    color: #1f2937;
+    background: transparent;
+    color: #2d3748;
     margin-right: auto;
     line-height: 1.6;
     white-space: pre-line;
+    padding: 12px 0;
 }
 
 .bot br {
@@ -81,12 +98,12 @@ body {
     white-space: pre-line;
 }
 
-/* Typing indicator seperti WhatsApp */
+/* Typing indicator seperti ChatGPT */
 .typing-indicator {
-    background: #f3f4f6;
+    background: transparent;
     color: #6b7280;
     margin: 8px 0;
-    padding: 12px 16px;
+    padding: 12px 0;
     border-radius: 12px;
     max-width: 80px;
     margin-right: auto;
@@ -97,7 +114,7 @@ body {
     opacity: 0;
     transform: translateY(10px);
     transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
 }
 
 .typing-indicator.show {
@@ -147,27 +164,29 @@ body {
 #input-container {
     display: flex;
     align-items: flex-end;
-    padding: 16px;
+    padding: 16px 20px 20px;
     background: #ffffff;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid #f0f0f0;
     gap: 12px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
 }
 
 #user-input {
     flex: 1;
-    padding: 12px 16px;
-    border: 2px solid #e5e7eb;
-    border-radius: 20px;
+    padding: 14px 18px;
+    border: 1px solid #e2e8f0;
+    border-radius: 22px;
     font-size: 16px;
     font-family: 'Inter', sans-serif;
-    transition: border-color 0.3s ease;
+    transition: all 0.2s ease;
     resize: none;
     overflow-y: auto;
-    min-height: 44px;
-    max-height: 150px;
-    line-height: 1.4;
+    min-height: 48px;
+    max-height: 120px;
+    line-height: 1.5;
     word-wrap: break-word;
     white-space: pre-wrap;
+    background: #fafafa;
 }
 
 /* Custom scrollbar untuk textarea seperti WhatsApp */
@@ -190,24 +209,26 @@ body {
 
 #user-input:focus {
     outline: none;
-    border-color: #2563eb;
+    border-color: #4a90e2;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
 }
 
 #user-input::placeholder {
-    color: #9ca3af;
-    font-size: 16px;
+    color: #a0aec0;
+    font-size: 15px;
 }
 
 #clear-btn {
-    background: white;
-    color: #dc2626;
-    border: 2px solid #e5e7eb;
+    background: #f8f8f8;
+    color: #6b7280;
+    border: 1px solid #e2e8f0;
     padding: 8px;
-    border-radius: 20px;
+    border-radius: 22px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    height: 44px;
-    width: 44px;
+    transition: all 0.2s ease;
+    height: 48px;
+    width: 48px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -216,212 +237,224 @@ body {
 }
 
 #clear-btn:hover {
-    background: #fef2f2;
-    border-color: #dc2626;
-    color: #b91c1c;
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #dc2626;
+    transform: scale(1.05);
 }
 
 #clear-btn:active {
-    transform: scale(0.98);
+    transform: scale(0.95);
 }
 
 #send-btn {
-    background: white;
-    color: #1f2937;
-    border: 2px solid #e5e7eb;
+    background: #4a90e2;
+    color: #ffffff;
+    border: 1px solid #4a90e2;
     padding: 12px 20px;
-    border-radius: 20px;
+    border-radius: 22px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
-    height: 44px;
-    min-width: 60px;
+    transition: all 0.2s ease;
+    height: 48px;
+    min-width: 70px;
     flex-shrink: 0;
+    font-size: 15px;
 }
 
 #send-btn:hover {
-    background: #f9fafb;
-    border-color: #d1d5db;
+    background: #357abd;
+    border-color: #357abd;
+    transform: scale(1.05);
 }
 
 #send-btn:active {
-    transform: scale(0.98);
+    transform: scale(0.95);
 }
 
-@media (max-width: 768px) {
+/* Media query untuk desktop besar */
+@media (min-width: 1200px) {
     #chat-container {
-        width: 95%;
-        height: 90vh;
+        max-width: 1000px;
+        height: 80vh;
+        max-height: 800px;
     }
 
     #chat-box {
-        height: calc(90vh - 120px);
+        padding: 24px 28px;
+    }
+
+    #input-container {
+        padding: 20px 28px 24px;
+    }
+
+    .user, .bot {
+        font-size: 16px;
+        max-width: 80%;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        background: #ffffff;
+        padding: 0;
+        align-items: stretch;
+        justify-content: stretch;
+    }
+
+    #chat-container {
+        width: 100%;
+        height: 100vh;
+        max-width: none;
+        max-height: none;
+        border-radius: 0;
+        box-shadow: none;
+        margin: 0;
+    }
+
+    #chat-box {
+        padding: 16px;
+    }
+
+    #input-container {
+        padding: 16px;
+    }
+
+    #user-input {
+        font-size: 16px;
+        padding: 12px 16px;
+        min-height: 44px;
+        max-height: 100px;
+    }
+
+    #clear-btn {
+        height: 44px;
+        width: 44px;
+        font-size: 15px;
+    }
+
+    #send-btn {
+        height: 44px;
+        padding: 12px 18px;
+        min-width: 65px;
+        font-size: 14px;
+    }
+
+    .user, .bot {
+        max-width: 90%;
+        font-size: 14px;
+    }
+
+    .typing-indicator {
+        padding: 10px 0;
+    }
+}
+
+/* Media query untuk device sangat kecil */
+@media (max-width: 480px) {
+    body {
+        background: #ffffff;
+        padding: 0;
+        align-items: stretch;
+        justify-content: stretch;
+    }
+
+    #chat-container {
+        width: 100%;
+        height: 100vh;
+        max-width: none;
+        max-height: none;
+        border-radius: 0;
+        box-shadow: none;
+        margin: 0;
+    }
+
+    #chat-box {
+        padding: 12px;
     }
 
     #input-container {
         padding: 12px;
+        gap: 10px;
     }
 
     #user-input {
         font-size: 16px;
         padding: 10px 14px;
         min-height: 40px;
-        max-height: 120px;
+        max-height: 80px;
+        border-radius: 20px;
     }
 
     #clear-btn {
         height: 40px;
         width: 40px;
         font-size: 14px;
+        border-radius: 20px;
     }
 
     #send-btn {
         height: 40px;
-        padding: 10px 16px;
-        min-width: 50px;
-    }
-
-    .progress-info {
-        min-width: 120px;
-    }
-
-    .progress-text {
-        font-size: 11px;
-    }
-
-    .progress-percentage {
-        font-size: 13px;
-    }
-
-    /* Typing indicator responsive untuk mobile */
-    .typing-indicator {
-        max-width: 70px;
         padding: 10px 14px;
-    }
-
-    .typing-dot {
-        width: 5px;
-        height: 5px;
-    }
-}
-
-/* Media query untuk browser/device paling kecil */
-@media (max-width: 480px) {
-    #chat-container {
-        width: 100%;
-        height: 100vh;
-        border-radius: 0;
-        max-width: none;
-    }
-
-    #chat-box {
-        height: calc(100vh - 100px);
-        padding: 12px;
-    }
-
-    #input-container {
-        padding: 8px;
-        gap: 8px;
-    }
-
-    #user-input {
-        font-size: 16px;
-        padding: 8px 12px;
-        min-height: 36px;
-        max-height: 100px;
-        border-radius: 18px;
-    }
-
-    #clear-btn {
-        height: 36px;
-        width: 36px;
+        min-width: 60px;
+        border-radius: 20px;
         font-size: 13px;
-        border-radius: 18px;
-    }
-
-    #send-btn {
-        height: 36px;
-        padding: 8px 12px;
-        min-width: 45px;
-        border-radius: 18px;
-        font-size: 14px;
     }
 
     .user, .bot {
-        padding: 10px 12px;
-        max-width: 85%;
-        font-size: 15px;
-        border-radius: 10px;
+        padding: 10px 14px;
+        max-width: 92%;
+        font-size: 14px;
+        border-radius: 16px;
+        margin: 8px 0;
     }
 
     .typing-indicator {
-        max-width: 60px;
-        padding: 8px 12px;
-    }
-
-    .typing-dot {
-        width: 4px;
-        height: 4px;
-    }
-
-    .progress-info {
-        min-width: 100px;
-    }
-
-    .progress-text {
-        font-size: 10px;
-    }
-
-    .progress-percentage {
-        font-size: 12px;
-    }
-
-    #ocr-progress {
-        padding: 8px 12px;
+        padding: 8px 0;
     }
 }
 
 /* OCR Progress Bar */
 #ocr-progress {
     display: none;
-    padding: 12px 16px;
-    background: #f8fafc;
-    border-top: 1px solid #e5e7eb;
+    padding: 16px 20px;
+    background: #fafafa;
+    border-top: 1px solid #f0f0f0;
 }
 
 .progress-container {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
 }
 
 .progress-info {
-    min-width: 140px;
+    min-width: 120px;
 }
 
 .progress-text {
-    font-size: 12px;
+    font-size: 13px;
     color: #6b7280;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
 }
 
 .progress-percentage {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
-    color: #1f2937;
+    color: #2d3748;
 }
 
 .progress-bar {
     flex: 1;
-    height: 6px;
-    background: #e5e7eb;
-    border-radius: 3px;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
     overflow: hidden;
 }
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    background: linear-gradient(90deg, #4a90e2, #357abd);
     width: 0%;
-    transition: width 0.3s ease;
+    transition: width 0.4s ease;
 } 
