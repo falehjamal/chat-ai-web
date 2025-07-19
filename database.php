@@ -1,0 +1,208 @@
+<?php
+/**
+ * Database helper untuk Chat AI Web
+ * Menangani koneksi database dan operasi CRUD untuk chat history
+ */
+
+require_once 'env_helper.php';
+
+class Database {
+    private $pdo;
+    private $host;
+    private $port;
+    private $dbname;
+    private $username;
+    private $password;
+    private $charset;
+
+    public function __construct() {
+        // Load environment variables jika belum dimuat
+        try {
+            loadEnv();
+        } catch (Exception $e) {
+            throw new Exception("Gagal memuat konfigurasi environment");
+        }
+
+        // Ambil konfigurasi database dari environment
+        $this->host = getEnvironmentVar('DB_HOST', 'localhost');
+        $this->port = getEnvironmentVar('DB_PORT', '3306');
+        $this->dbname = getEnvironmentVar('DB_NAME', 'chat_ai_web');
+        $this->username = getEnvironmentVar('DB_USERNAME', 'root');
+        $this->password = getEnvironmentVar('DB_PASSWORD', '');
+        $this->charset = getEnvironmentVar('DB_CHARSET', 'utf8mb4');
+    }
+
+    /**
+     * Membuat koneksi ke database
+     */
+    public function connect() {
+        if ($this->pdo !== null) {
+            return $this->pdo;
+        }
+
+        try {
+            $dsn = "mysql:host={$this->host};port={$this->port};dbname={$this->dbname};charset={$this->charset}";
+            
+            $options = [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ];
+
+            $this->pdo = new PDO($dsn, $this->username, $this->password, $options);
+            return $this->pdo;
+        } catch (PDOException $e) {
+            throw new Exception("Koneksi database gagal: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Membuat tabel chat_history jika belum ada
+     */
+    public function createChatTable() {
+        $pdo = $this->connect();
+        
+        $sql = "CREATE TABLE IF NOT EXISTS chat_history (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            message TEXT NOT NULL,
+            response TEXT NOT NULL,
+            ip_address VARCHAR(45) NOT NULL,
+            mode VARCHAR(20) DEFAULT 'default',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_ip_address (ip_address),
+            INDEX idx_created_at (created_at),
+            INDEX idx_mode (mode)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+        try {
+            $pdo->exec($sql);
+            
+            // Add mode column if it doesn't exist (for existing tables)
+            $alterSql = "ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS mode VARCHAR(20) DEFAULT 'default'";
+            try {
+                $pdo->exec($alterSql);
+            } catch (PDOException $e) {
+                // Column might already exist, ignore error
+            }
+            
+            return true;
+        } catch (PDOException $e) {
+            throw new Exception("Gagal membuat tabel chat_history: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Menyimpan percakapan chat ke database
+     */
+    public function saveChatHistory($message, $response, $ipAddress, $mode = 'default') {
+        $pdo = $this->connect();
+        
+        $sql = "INSERT INTO chat_history (message, response, ip_address, mode) VALUES (?, ?, ?, ?)";
+        
+        try {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$message, $response, $ipAddress, $mode]);
+            return $pdo->lastInsertId();
+        } catch (PDOException $e) {
+            throw new Exception("Gagal menyimpan chat history: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Method alias untuk kompatibilitas
+     */
+    public function saveMessage($message, $response, $mode = 'default') {
+        $ipAddress = self::getRealIpAddress();
+        return $this->saveChatHistory($message, $response, $ipAddress, $mode);
+    }
+
+    /**
+     * Mengambil riwayat chat berdasarkan IP address (opsional)
+     */
+    public function getChatHistory($ipAddress = null, $limit = 50, $offset = 0) {
+        $pdo = $this->connect();
+        
+        $sql = "SELECT id, message, response, ip_address, created_at, updated_at FROM chat_history";
+        $params = [];
+        
+        if ($ipAddress) {
+            $sql .= " WHERE ip_address = ?";
+            $params[] = $ipAddress;
+        }
+        
+        $sql .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+        
+        try {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            throw new Exception("Gagal mengambil chat history: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Menghitung total chat berdasarkan IP address (opsional)
+     */
+    public function countChatHistory($ipAddress = null) {
+        $pdo = $this->connect();
+        
+        $sql = "SELECT COUNT(*) as total FROM chat_history";
+        $params = [];
+        
+        if ($ipAddress) {
+            $sql .= " WHERE ip_address = ?";
+            $params[] = $ipAddress;
+        }
+        
+        try {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $result = $stmt->fetch();
+            return $result['total'];
+        } catch (PDOException $e) {
+            throw new Exception("Gagal menghitung chat history: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Inisialisasi database - membuat tabel jika diperlukan
+     */
+    public function initialize() {
+        $this->createChatTable();
+    }
+
+    /**
+     * Mendapatkan IP address user yang real
+     */
+    public static function getRealIpAddress() {
+        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+            return $_SERVER['HTTP_CLIENT_IP'];
+        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            return $_SERVER['HTTP_X_FORWARDED_FOR'];
+        } elseif (!empty($_SERVER['HTTP_X_FORWARDED'])) {
+            return $_SERVER['HTTP_X_FORWARDED'];
+        } elseif (!empty($_SERVER['HTTP_FORWARDED_FOR'])) {
+            return $_SERVER['HTTP_FORWARDED_FOR'];
+        } elseif (!empty($_SERVER['HTTP_FORWARDED'])) {
+            return $_SERVER['HTTP_FORWARDED'];
+        } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
+            return $_SERVER['REMOTE_ADDR'];
+        }
+        return 'unknown';
+    }
+}
+
+// Fungsi helper untuk kemudahan penggunaan
+function getChatDatabase() {
+    static $database = null;
+    if ($database === null) {
+        $database = new Database();
+    }
+    return $database;
+}
+
+?> 

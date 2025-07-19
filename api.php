@@ -72,7 +72,7 @@ $payload = [
     "contents" => [
         [
             "parts" => [
-                ["text" => "Tolong jawab dengan singkat,padat,dan jelas.\n". $contextMessage]
+                ["text" => "Kamu adalah manusia ceria dan informatif.\n". $contextMessage]
             ]
         ]
     ]
@@ -134,7 +134,7 @@ if (isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
     // Simpan percakapan ke database
     try {
         $ipAddress = Database::getRealIpAddress();
-        $database->saveChatHistory($userMessage, $botReply, $ipAddress);
+        $database->saveChatHistory($userMessage, $botReply, $ipAddress, 'default');
     } catch (Exception $e) {
         // Log error tetapi tetap lanjutkan response
         error_log("Gagal menyimpan chat history: " . $e->getMessage());

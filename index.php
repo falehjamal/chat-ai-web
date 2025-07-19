@@ -8,11 +8,15 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <div id="mode-selector">
+        <button id="mode-default" class="mode-btn active">Mode Default</button>
+        <button id="mode-uas" class="mode-btn">Mode UAS</button>
+    </div>
     <div id="chat-container">
         <div id="chat-box"></div>
         <div id="input-container">
             <textarea id="user-input" placeholder="Type your message..." rows="1"></textarea>
-            <button id="clear-btn" title="Hapus riwayat chat dan cache">🗑️</button>
+            <button id="clear-btn" title="Klik: Hapus mode saat ini | Klik kanan atau double-click: Hapus semua mode">🗑️</button>
             <button id="send-btn">Send</button>
         </div>
         <div id="ocr-progress">

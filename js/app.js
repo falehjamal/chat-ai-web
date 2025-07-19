@@ -1,14 +1,32 @@
 $(document).ready(function() {
     const MAX_HISTORY = 10; // Maximum number of messages to keep for context
     
+    // Current mode tracking
+    let currentMode = 'default';
+    
     // Debug: Check if Tesseract is available
     console.log('Tesseract available:', typeof Tesseract !== 'undefined');
     if (typeof Tesseract !== 'undefined') {
         console.log('Tesseract object:', Tesseract);
     }
     
-    // Load chat history from localStorage
-    let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+    // Load separate chat histories from localStorage
+    let chatHistoryDefault = JSON.parse(localStorage.getItem('chatHistoryDefault')) || [];
+    let chatHistoryUAS = JSON.parse(localStorage.getItem('chatHistoryUAS')) || [];
+    
+    // Get current chat history based on mode
+    function getCurrentChatHistory() {
+        return currentMode === 'uas' ? chatHistoryUAS : chatHistoryDefault;
+    }
+    
+    // Save chat history to localStorage
+    function saveChatHistory() {
+        if (currentMode === 'uas') {
+            localStorage.setItem('chatHistoryUAS', JSON.stringify(chatHistoryUAS));
+        } else {
+            localStorage.setItem('chatHistoryDefault', JSON.stringify(chatHistoryDefault));
+        }
+    }
     
     // Cache jQuery objects
     const $chatBox = $('#chat-box');
@@ -18,16 +36,50 @@ $(document).ready(function() {
     const $progressText = $('#ocr-progress-text');
     const $progressFill = $('#ocr-progress-fill');
     const $progressPercentage = $('#ocr-progress-percentage');
+    const $modeDefault = $('#mode-default');
+    const $modeUAS = $('#mode-uas');
+
+    // Mode switching functionality
+    $modeDefault.on('click', function() {
+        if (currentMode !== 'default') {
+            currentMode = 'default';
+            updateModeButtons();
+            displayChatHistory();
+        }
+    });
+    
+    $modeUAS.on('click', function() {
+        if (currentMode !== 'uas') {
+            currentMode = 'uas';
+            updateModeButtons();
+            displayChatHistory();
+        }
+    });
+    
+    function updateModeButtons() {
+        $modeDefault.toggleClass('active', currentMode === 'default');
+        $modeUAS.toggleClass('active', currentMode === 'uas');
+        
+        // Update chat container mode indicator
+        const $chatContainer = $('#chat-container');
+        if (currentMode === 'uas') {
+            $chatContainer.attr('data-mode', 'Mode UAS');
+        } else {
+            $chatContainer.attr('data-mode', 'Mode Default');
+        }
+    }
 
     // Initialize
     displayChatHistory();
     autoResizeTextarea($userInput);
+    updateModeButtons();
     
     // Clean up any leftover typing indicators
     hideTypingIndicator();
 
     function displayChatHistory() {
         $chatBox.empty();
+        const chatHistory = getCurrentChatHistory();
         chatHistory.forEach(msg => {
             const $messageDiv = $('<div>').addClass(msg.sender);
             
@@ -68,7 +120,8 @@ $(document).ready(function() {
     }
 
     function getRecentHistory() {
-        // Get the last 10 messages for context
+        // Get the last 10 messages for context from current chat history
+        const chatHistory = getCurrentChatHistory();
         return chatHistory.slice(-MAX_HISTORY);
     }
 
@@ -240,9 +293,20 @@ $(document).ready(function() {
         const userMessage = $userInput.val().trim();
         if (!userMessage) return;
 
-        // Add user message to chat history
+        // Get current chat history based on mode
+        let chatHistory = getCurrentChatHistory();
+        
+        // Add user message to current chat history
         chatHistory.push({ sender: 'user', text: userMessage });
-        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+        
+        // Update the appropriate history array
+        if (currentMode === 'uas') {
+            chatHistoryUAS = chatHistory;
+        } else {
+            chatHistoryDefault = chatHistory;
+        }
+        
+        saveChatHistory();
         displayChatHistory();
 
         // Clear input field
@@ -252,30 +316,45 @@ $(document).ready(function() {
         // Show typing indicator
         showTypingIndicator();
 
-        // Get recent chat history for context
-        const recentHistory = getRecentHistory();
+        // Get recent chat history for context - UAS mode doesn't need history
+        const recentHistory = currentMode === 'uas' ? [] : getRecentHistory();
+        
+        // Choose API endpoint based on mode
+        const apiUrl = currentMode === 'uas' ? 'api_uas.php' : 'api.php';
 
-        // Send message and history to server
+        // Send message to server
         $.ajax({
-            url: 'api.php',
+            url: apiUrl,
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ 
                 message: userMessage,
-                history: recentHistory
+                history: recentHistory,
+                mode: currentMode
             }),
             success: function(data) {
                 if (data.reply) {
-                    // Simulasi typing delay yang realistis (1-2 detik)
-                    const typingDelay = Math.random() * 1000 + 1000; // 1-2 seconds
+                    // Simulasi typing delay yang realistis (lebih lama untuk UAS mode)
+                    const typingDelay = currentMode === 'uas' ? 
+                        Math.random() * 2000 + 2000 : // 2-4 seconds for UAS
+                        Math.random() * 1000 + 1000;  // 1-2 seconds for default
                     
                     setTimeout(() => {
                         // Hide typing indicator
                         hideTypingIndicator();
                         
-                        // Add bot reply to chat history (response sudah dibersihkan di backend)
+                        // Add bot reply to current chat history
+                        chatHistory = getCurrentChatHistory();
                         chatHistory.push({ sender: 'bot', text: data.reply });
-                        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                        
+                        // Update the appropriate history array
+                        if (currentMode === 'uas') {
+                            chatHistoryUAS = chatHistory;
+                        } else {
+                            chatHistoryDefault = chatHistory;
+                        }
+                        
+                        saveChatHistory();
                         displayChatHistory();
                     }, typingDelay);
                 } else {
@@ -287,9 +366,22 @@ $(document).ready(function() {
                 hideTypingIndicator();
                 
                 console.error('Error:', error);
+                
                 // Show error message in chat
-                chatHistory.push({ sender: 'bot', text: 'Maaf, terjadi kesalahan saat memproses pesan Anda. Silakan coba lagi.' });
-                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                let chatHistory = getCurrentChatHistory();
+                chatHistory.push({ 
+                    sender: 'bot', 
+                    text: 'Maaf, terjadi kesalahan saat memproses pesan Anda. Silakan coba lagi.' 
+                });
+                
+                // Update the appropriate history array
+                if (currentMode === 'uas') {
+                    chatHistoryUAS = chatHistory;
+                } else {
+                    chatHistoryDefault = chatHistory;
+                }
+                
+                saveChatHistory();
                 displayChatHistory();
             }
         });
@@ -297,7 +389,34 @@ $(document).ready(function() {
 
     // Function to clear storage and cache
     function clearStorageAndCache() {
-        if (confirm('Apakah Anda yakin ingin menghapus semua riwayat chat dan cache? Tindakan ini tidak dapat dibatalkan.')) {
+        const modeText = currentMode === 'uas' ? 'Mode UAS' : 'Mode Default';
+        if (confirm(`Apakah Anda yakin ingin menghapus riwayat chat untuk ${modeText}? Tindakan ini tidak dapat dibatalkan.`)) {
+            try {
+                // Clear chat history for current mode
+                if (currentMode === 'uas') {
+                    chatHistoryUAS = [];
+                    localStorage.removeItem('chatHistoryUAS');
+                } else {
+                    chatHistoryDefault = [];
+                    localStorage.removeItem('chatHistoryDefault');
+                }
+                
+                // Clear chat display
+                $chatBox.empty();
+                
+                // Show success message
+                alert(`Riwayat chat ${modeText} berhasil dihapus!`);
+                
+            } catch (error) {
+                console.error('Error clearing storage:', error);
+                alert('Terjadi kesalahan saat menghapus data. Silakan coba lagi.');
+            }
+        }
+    }
+    
+    // Function to clear all storage and cache (both modes)
+    function clearAllStorageAndCache() {
+        if (confirm('Apakah Anda yakin ingin menghapus SEMUA riwayat chat (Mode Default dan UAS) serta cache? Tindakan ini tidak dapat dibatalkan.')) {
             try {
                 // Clear localStorage
                 localStorage.clear();
@@ -305,8 +424,9 @@ $(document).ready(function() {
                 // Clear sessionStorage
                 sessionStorage.clear();
                 
-                // Clear chat history array
-                chatHistory = [];
+                // Clear chat history arrays
+                chatHistoryDefault = [];
+                chatHistoryUAS = [];
                 
                 // Clear chat display
                 $chatBox.empty();
@@ -354,7 +474,29 @@ $(document).ready(function() {
     
     // Cache jQuery object for clear button
     const $clearBtn = $('#clear-btn');
-    $clearBtn.on('click', clearStorageAndCache);
+    
+    // Regular click - clear current mode
+    $clearBtn.on('click', function(e) {
+        e.preventDefault();
+        clearStorageAndCache();
+    });
+    
+    // Right click - show options
+    $clearBtn.on('contextmenu', function(e) {
+        e.preventDefault();
+        const choice = confirm('Klik OK untuk menghapus SEMUA riwayat (Default + UAS)\nKlik Cancel untuk menghapus hanya mode saat ini');
+        if (choice) {
+            clearAllStorageAndCache();
+        } else {
+            clearStorageAndCache();
+        }
+    });
+    
+    // Double click - clear all
+    $clearBtn.on('dblclick', function(e) {
+        e.preventDefault();
+        clearAllStorageAndCache();
+    });
     
     // Auto-resize textarea on input (seperti WhatsApp)
     $userInput.on('input propertychange', function() {
