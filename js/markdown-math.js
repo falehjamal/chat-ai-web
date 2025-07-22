@@ -154,11 +154,32 @@ class MarkdownMathRenderer {
 
     // Apply custom formatting for specific patterns - ALL REGEX PROCESSING HERE
     applyCustomFormatting(html) {
+        // Format question type (Jenis soal)
+        html = html.replace(/\*\*Jenis soal:\*\*\s*(.+?)(?=\*\*|$)/gi, '<div class="question-type">📚 Jenis Soal: $1</div>');
+        
+        // Format problem statement (Soal)
+        html = html.replace(/\*\*Soal:\*\*\s*([\s\S]*?)(?=\*\*Langkah|$)/gi, '<div class="problem-statement"><strong>📝 Soal:</strong><br>$1</div>');
+        
+        // Format solution steps header
+        html = html.replace(/\*\*Langkah-langkah penyelesaian:\*\*/gi, '<div class="solution-steps"><h4>🔧 Langkah-langkah Penyelesaian:</h4>');
+        
+        // Format individual steps with numbering
+        let stepCounter = 1;
+        html = html.replace(/^(\d+\.\s+.+?)$/gm, (match, step) => {
+            return `<div class="step-item"><span class="step-number">${stepCounter++}</span>${step.replace(/^\d+\.\s*/, '')}</div>`;
+        });
+        
+        // Format final answer with enhanced styling
+        html = html.replace(/\*\*Jawaban akhir:\*\*\s*([\s\S]*?)(?=\*\*Penjelasan|$)/gi, '<div class="final-answer">🎯 Jawaban Akhir: $1</div>');
+        
+        // Format explanation (Penjelasan singkat)
+        html = html.replace(/\*\*Penjelasan singkat:\*\*\s*([\s\S]*?)$/gi, '<div class="explanation-box"><strong>💡 Penjelasan:</strong><br>$1</div>');
+        
         // Format boxed answers (\\boxed{...} and \boxed{...})
         html = html.replace(/\\\\boxed\{([^}]+)\}/g, '<span class="answer-box">$1</span>');
         html = html.replace(/\\boxed\{([^}]+)\}/g, '<span class="answer-box">$1</span>');
         
-        // Format mathematical choice options (A. B. C. D.)
+        // Format mathematical choice options (A. B. C. D. E.)
         html = html.replace(/^([A-E])\.\s*(.+)$/gm, '<div class="choice-option"><strong>$1.</strong> $2</div>');
         
         // Format solution steps markers (more comprehensive)

@@ -291,13 +291,74 @@ class StreamingChat {
             // Replace streaming content with final formatted content using markdown renderer
             const finalText = this.streamingText;
             const formattedHtml = this.formatBotResponseWithMath(finalText);
-            this.currentBotMessageElement.html(formattedHtml);
+            
+            // Add copy button to the message
+            const messageWithCopyBtn = this.addCopyButton(formattedHtml);
+            this.currentBotMessageElement.html(messageWithCopyBtn);
             
             // Render math expressions
             if (window.markdownMathRenderer) {
                 markdownMathRenderer.renderMath(this.currentBotMessageElement[0]);
             }
+            
+            // Setup copy button functionality
+            this.setupCopyButton(this.currentBotMessageElement);
         }
+    }
+    
+    // Add copy button to message
+    addCopyButton(htmlContent) {
+        return `
+            <button class="copy-btn" title="Copy response">📋 Copy</button>
+            ${htmlContent}
+        `;
+    }
+    
+    // Setup copy button functionality
+    setupCopyButton(messageElement) {
+        const copyBtn = messageElement.find('.copy-btn');
+        const originalText = this.streamingText;
+        
+        copyBtn.on('click', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            try {
+                await navigator.clipboard.writeText(originalText);
+                
+                // Visual feedback
+                const btn = $(this);
+                const originalText = btn.text();
+                
+                btn.addClass('copied')
+                   .text('Copied!')
+                   .css('background', '#10b981');
+                
+                setTimeout(() => {
+                    btn.removeClass('copied')
+                       .text(originalText)
+                       .css('background', '');
+                }, 2000);
+                
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = originalText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // Visual feedback for fallback
+                const btn = $(this);
+                btn.text('Copied!').css('background', '#10b981');
+                setTimeout(() => {
+                    btn.text('📋 Copy').css('background', '');
+                }, 2000);
+            }
+        });
     }
 
     // Format bot response with markdown and math rendering - ALL FORMATTING IN FRONTEND

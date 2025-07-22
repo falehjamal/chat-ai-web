@@ -56,35 +56,32 @@ if (!$apiKey) {
     exit;
 }
 
-// Prepare messages for OpenAI API with Vision
+// Siapkan pesan untuk OpenAI API dengan Vision
 $messages = [];
 
-// Mode UAS Matematika: TANPA HISTORY - setiap chat berdiri sendiri
-// Tidak menggunakan chat history sama sekali
+// Sistem prompt untuk menyelesaikan soal matematika
+$systemMessage = "Anda adalah asisten AI yang ahli dalam matematika dan pemecahan soal. Tugas Anda meliputi:
+1. Jika terdapat gambar: Analisis gambar yang berisi soal matematika.
+2. Jika hanya teks: Jawab pertanyaan secara langsung.
+3. Identifikasi jenis soal (misalnya aljabar, kalkulus, geometri, dll.).
+4. Berikan jawaban akhir yang akurat.
+5. Gunakan format yang mudah dipahami, dengan penjelasan yang jelas dan terstruktur.
 
-// Prepare system message for math problem solving
-$systemMessage = "Anda adalah asisten AI yang ahli dalam matematika dan pemecahan soal. Tugas Anda adalah:
-1. Jika ada gambar: Menganalisis gambar yang berisi soal matematika
-2. Jika hanya teks: Menjawab pertanyaan secara langsung
-3. Mengidentifikasi jenis soal (aljabar, kalkulus, geometri, dll.)
-4. Memberikan jawaban final yang akurat
-5. Gunakan format yang mudah dipahami dengan penjelasan yang jelas
+Fokuskan pada pemahaman konsep dan langkah-langkah logis dalam penyelesaian soal.";
 
-Fokus pada pemahaman konsep dan langkah-langkah logis dalam penyelesaian. Setiap pertanyaan adalah independen.";
-
-// Add system message first
+// Tambahkan pesan sistem ke array
 $messages[] = [
     'role' => 'system',
-    'content' => $systemMessage
+    'content' => $systemMessage,
 ];
 
-// Prepare the user message content (bisa dengan atau tanpa gambar)
+// Cek apakah ada gambar yang dikirim (berformat base64)
 if (!empty($imageBase64)) {
     // Mode dengan gambar
     $userContent = [
         [
             'type' => 'text',
-            'text' => $userMessage ?: 'Tolong analisis dan selesaikan soal matematika dalam gambar ini dengan penjelasan langkah demi langkah.'
+            'text' => $userMessage ?: 'Tolong analisis dan selesaikan soal dalam gambar ini.'
         ],
         [
             'type' => 'image_url',
@@ -95,11 +92,11 @@ if (!empty($imageBase64)) {
         ]
     ];
 } else {
-    // Mode hanya teks
-    $userContent = $userMessage ?: 'Tolong bantu saya dengan soal matematika.';
+    // Mode teks saja
+    $userContent = $userMessage ?: 'Tolong bantu saya dengan soal ini.';
 }
 
-// Add user message
+// Tambahkan ke messages
 $messages[] = [
     'role' => 'user',
     'content' => $userContent

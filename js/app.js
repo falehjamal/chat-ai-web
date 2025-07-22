@@ -181,7 +181,17 @@ $(document).ready(function() {
             // Format text untuk bot messages
             if (msg.sender === 'bot') {
                 const formattedText = formatBotMessage(msg.text);
-                $messageDiv.html(formattedText);
+                
+                // Add copy button for bot messages
+                const messageWithCopyBtn = `
+                    <button class="copy-btn" title="Copy response">📋 Copy</button>
+                    ${formattedText}
+                `;
+                
+                $messageDiv.html(messageWithCopyBtn);
+                
+                // Setup copy functionality for this message
+                setupCopyButtonForMessage($messageDiv, msg.text);
                 
                 // Render math if available
                 if (window.markdownMathRenderer) {
@@ -206,6 +216,52 @@ $(document).ready(function() {
         });
         
         scrollToBottom();
+    }
+    
+    // Setup copy button functionality for a message
+    function setupCopyButtonForMessage(messageElement, originalText) {
+        const copyBtn = messageElement.find('.copy-btn');
+        
+        copyBtn.on('click', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            try {
+                await navigator.clipboard.writeText(originalText);
+                
+                // Visual feedback
+                const btn = $(this);
+                const originalBtnText = btn.text();
+                
+                btn.addClass('copied')
+                   .text('Copied!')
+                   .css('background', '#10b981');
+                
+                setTimeout(() => {
+                    btn.removeClass('copied')
+                       .text(originalBtnText)
+                       .css('background', '');
+                }, 2000);
+                
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = originalText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // Visual feedback for fallback
+                const btn = $(this);
+                btn.text('Copied!').css('background', '#10b981');
+                setTimeout(() => {
+                    btn.text('📋 Copy').css('background', '');
+                }, 2000);
+            }
+        });
     }
     
     function formatBotMessage(text) {
@@ -707,6 +763,112 @@ $(document).ready(function() {
         }
     }
 
+    // Function to clear comprehensive cache and storage with advanced options
+    function clearComprehensiveCache() {
+        const confirmMessage = `🧹 CLEAR ALL CACHE & STORAGE
+        
+Ini akan menghapus:
+✓ Semua riwayat chat (Mode Default, UAS, UAS Math)
+✓ Preferensi model dan pengaturan
+✓ Cache browser dan temporary files
+✓ Session storage dan cookies (jika ada)
+✓ Service worker cache (jika ada)
+✓ IndexedDB storage (jika ada)
+
+⚠️ PERINGATAN: Tindakan ini tidak dapat dibatalkan!
+⚠️ Anda akan kembali ke pengaturan awal.
+
+Lanjutkan?`;
+
+        if (confirm(confirmMessage)) {
+            try {
+                // Show loading indicator
+                const $clearCacheBtn = $('#clear-cache-btn');
+                const originalText = $clearCacheBtn.html();
+                $clearCacheBtn.html('🔄 Clearing...').prop('disabled', true);
+
+                // Clear all localStorage
+                localStorage.clear();
+                
+                // Clear all sessionStorage
+                sessionStorage.clear();
+                
+                // Clear all chat history arrays
+                chatHistoryDefault = [];
+                chatHistoryUAS = [];
+                chatHistoryUASMath = [];
+                
+                // Clear current image
+                clearImagePreview();
+                
+                // Clear chat display
+                $chatBox.empty();
+                
+                // Reset to default mode and model
+                currentMode = 'default';
+                selectedModel = 'gpt-3.5-turbo';
+                currentImage = null;
+                
+                // Reset UI
+                updateModeButtons();
+                $modelSelect.val(selectedModel);
+                $userInput.val('');
+                
+                // Clear browser cache (if possible)
+                if ('caches' in window) {
+                    caches.keys().then(function(names) {
+                        for (let name of names) {
+                            caches.delete(name);
+                        }
+                    });
+                }
+                
+                // Clear IndexedDB (if any)
+                if ('indexedDB' in window) {
+                    try {
+                        const dbs = ['tesseract-cache', 'mathjax-cache', 'app-cache'];
+                        dbs.forEach(dbName => {
+                            const deleteReq = indexedDB.deleteDatabase(dbName);
+                            deleteReq.onsuccess = () => console.log(`${dbName} cleared`);
+                        });
+                    } catch (e) {
+                        console.log('IndexedDB clear attempted');
+                    }
+                }
+                
+                // Success feedback
+                setTimeout(() => {
+                    $clearCacheBtn.html('✅ Cleared!').css('background', '#10b981');
+                    
+                    setTimeout(() => {
+                        $clearCacheBtn.html(originalText).css('background', '').prop('disabled', false);
+                        
+                        // Show comprehensive success message
+                        alert(`✅ PEMBERSIHAN SELESAI!
+
+🗑️ Berhasil dihapus:
+• ${Object.keys(localStorage).length || 0}+ localStorage items
+• ${Object.keys(sessionStorage).length || 0}+ sessionStorage items  
+• Semua riwayat chat (3 mode)
+• Cache browser dan temporary files
+• Pengaturan dan preferensi
+
+🔄 Aplikasi telah direset ke pengaturan awal.
+💡 Silakan mulai chat baru!`);
+                        
+                    }, 2000);
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error clearing comprehensive cache:', error);
+                alert('❌ Terjadi kesalahan saat membersihkan cache.\nSilakan refresh halaman dan coba lagi.');
+                
+                // Reset button state
+                $('#clear-cache-btn').html(originalText).prop('disabled', false);
+            }
+        }
+    }
+
     // Event handlers
     $sendBtn.on('click', sendMessage);
 
@@ -724,6 +886,12 @@ $(document).ready(function() {
     $('#clear-btn').on('dblclick', function(e) {
         e.preventDefault();
         clearAllStorageAndCache();
+    });
+
+    // Handle clear cache button
+    $('#clear-cache-btn').on('click', function(e) {
+        e.preventDefault();
+        clearComprehensiveCache();
     });
 
     // Enter key handler

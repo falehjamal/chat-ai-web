@@ -62,6 +62,7 @@
             <textarea id="user-input" placeholder="Type your message..." rows="1"></textarea>
             <button id="image-btn" title="Upload gambar untuk Mode UAS Matematika" style="display: none;">📸</button>
             <button id="clear-btn" title="Klik: Hapus mode saat ini | Klik kanan atau double-click: Hapus semua mode">🗑️</button>
+            <button id="clear-cache-btn" title="Hapus semua cache dan localStorage">🧹 Clear All</button>
             <button id="send-btn">Send</button>
         </div>
         <div id="ocr-progress">
