@@ -12,6 +12,22 @@
         <button id="mode-default" class="mode-btn active">Mode Default</button>
         <button id="mode-uas" class="mode-btn">Mode UAS</button>
     </div>
+    
+    <div id="model-selector">
+        <label for="gpt-model">Model GPT:</label>
+        <select id="gpt-model" class="model-select">
+            <option value="gpt-3.5-turbo">
+                GPT-3.5 Turbo — Cepat & Ekonomis (Cocok untuk obrolan ringan)
+            </option>
+            <option value="gpt-4o">
+                GPT-4o — Pintar & Fleksibel (Ideal untuk tugas, UAS, dan esai)
+            </option>
+            <option value="gpt-4.1">
+                GPT-4.1 — Akurasi Tinggi (Terbaik untuk matematika dan logika kompleks)
+            </option>
+
+        </select>
+    </div>
     <div id="chat-container">
         <div id="chat-box"></div>
         <div id="input-container">
@@ -35,6 +51,7 @@
     <!-- Local JavaScript Files -->
     <script src="js/jquery.min.js"></script>
     <script src="js/tesseract.min.js"></script>
+    <script src="js/streaming.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

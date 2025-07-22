@@ -3,6 +3,7 @@ $(document).ready(function() {
     
     // Current mode tracking
     let currentMode = 'default';
+    let selectedModel = 'gpt-3.5-turbo'; // Default model sesuai dengan HTML
     
     // Debug: Check if Tesseract is available
     console.log('Tesseract available:', typeof Tesseract !== 'undefined');
@@ -38,6 +39,7 @@ $(document).ready(function() {
     const $progressPercentage = $('#ocr-progress-percentage');
     const $modeDefault = $('#mode-default');
     const $modeUAS = $('#mode-uas');
+    const $modelSelect = $('#gpt-model');
 
     // Mode switching functionality
     $modeDefault.on('click', function() {
@@ -54,6 +56,15 @@ $(document).ready(function() {
             updateModeButtons();
             displayChatHistory();
         }
+    });
+    
+    // Model selection handler
+    $modelSelect.on('change', function() {
+        selectedModel = $(this).val();
+        console.log('Model selected:', selectedModel);
+        
+        // Save model preference to localStorage
+        localStorage.setItem('selectedGPTModel', selectedModel);
     });
     
     function updateModeButtons() {
@@ -74,12 +85,20 @@ $(document).ready(function() {
     autoResizeTextarea($userInput);
     updateModeButtons();
     
+    // Load saved model preference
+    const savedModel = localStorage.getItem('selectedGPTModel');
+    if (savedModel) {
+        selectedModel = savedModel;
+        $modelSelect.val(savedModel);
+    }
+    
     // Clean up any leftover typing indicators
     hideTypingIndicator();
 
     function displayChatHistory() {
         $chatBox.empty();
         const chatHistory = getCurrentChatHistory();
+        
         chatHistory.forEach(msg => {
             const $messageDiv = $('<div>').addClass(msg.sender);
             
@@ -92,6 +111,7 @@ $(document).ready(function() {
             
             $chatBox.append($messageDiv);
         });
+        
         $chatBox.scrollTop($chatBox[0].scrollHeight);
     }
 
@@ -293,86 +313,32 @@ $(document).ready(function() {
         const userMessage = $userInput.val().trim();
         if (!userMessage) return;
 
+        // Disable send button during streaming
+        $sendBtn.prop('disabled', true).addClass('btn-loading');
+
         // Get current chat history based on mode
         let chatHistory = getCurrentChatHistory();
         
-        // Add user message to current chat history
-        chatHistory.push({ sender: 'user', text: userMessage });
-        
-        // Update the appropriate history array
-        if (currentMode === 'uas') {
-            chatHistoryUAS = chatHistory;
-        } else {
-            chatHistoryDefault = chatHistory;
-        }
-        
-        saveChatHistory();
-        displayChatHistory();
-
-        // Clear input field
+        // Clear input field immediately
         $userInput.val('');
         autoResizeTextarea($userInput);
-
-        // Show typing indicator
-        showTypingIndicator();
 
         // Get recent chat history for context - UAS mode doesn't need history
         const recentHistory = currentMode === 'uas' ? [] : getRecentHistory();
         
-        // Choose API endpoint based on mode
-        const apiUrl = currentMode === 'uas' ? 'api_uas.php' : 'api.php';
-
-        // Send message to server
-        $.ajax({
-            url: apiUrl,
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ 
-                message: userMessage,
-                history: recentHistory,
-                mode: currentMode
-            }),
-            success: function(data) {
-                if (data.reply) {
-                    // Simulasi typing delay yang realistis (lebih lama untuk UAS mode)
-                    const typingDelay = currentMode === 'uas' ? 
-                        Math.random() * 2000 + 2000 : // 2-4 seconds for UAS
-                        Math.random() * 1000 + 1000;  // 1-2 seconds for default
-                    
-                    setTimeout(() => {
-                        // Hide typing indicator
-                        hideTypingIndicator();
-                        
-                        // Add bot reply to current chat history
-                        chatHistory = getCurrentChatHistory();
-                        chatHistory.push({ sender: 'bot', text: data.reply });
-                        
-                        // Update the appropriate history array
-                        if (currentMode === 'uas') {
-                            chatHistoryUAS = chatHistory;
-                        } else {
-                            chatHistoryDefault = chatHistory;
-                        }
-                        
-                        saveChatHistory();
-                        displayChatHistory();
-                    }, typingDelay);
-                } else {
-                    hideTypingIndicator();
-                }
-            },
-            error: function(xhr, status, error) {
-                // Hide typing indicator on error
-                hideTypingIndicator();
-                
-                console.error('Error:', error);
-                
-                // Show error message in chat
-                let chatHistory = getCurrentChatHistory();
-                chatHistory.push({ 
-                    sender: 'bot', 
-                    text: 'Maaf, terjadi kesalahan saat memproses pesan Anda. Silakan coba lagi.' 
-                });
+        // Check if streaming is available
+        const useStreaming = window.StreamingChat;
+        
+        if (useStreaming) {
+            // Use streaming for both modes
+            const streamingChat = new StreamingChat();
+            const streamEndpoint = currentMode === 'uas' ? 'api_uas_stream.php' : 'api_stream.php';
+            
+            streamingChat.sendMessageWithStreaming(userMessage, recentHistory, streamEndpoint, selectedModel, (fullResponse) => {
+                // Add messages to history after streaming completes
+                chatHistory = getCurrentChatHistory();
+                chatHistory.push({ sender: 'user', text: userMessage });
+                chatHistory.push({ sender: 'bot', text: fullResponse });
                 
                 // Update the appropriate history array
                 if (currentMode === 'uas') {
@@ -382,9 +348,103 @@ $(document).ready(function() {
                 }
                 
                 saveChatHistory();
-                displayChatHistory();
+                
+                // Re-enable send button
+                $sendBtn.prop('disabled', false).removeClass('btn-loading');
+            });
+            
+        } else {
+            // Fallback to regular API for UAS mode or if streaming not available
+            
+            // Add user message to current chat history
+            chatHistory.push({ sender: 'user', text: userMessage });
+            
+            // Update the appropriate history array
+            if (currentMode === 'uas') {
+                chatHistoryUAS = chatHistory;
+            } else {
+                chatHistoryDefault = chatHistory;
             }
-        });
+            
+            saveChatHistory();
+            displayChatHistory();
+
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Choose API endpoint based on mode
+            const apiUrl = currentMode === 'uas' ? 'api_uas.php' : 'api.php';
+
+            // Send message to server
+            $.ajax({
+                url: apiUrl,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ 
+                    message: userMessage,
+                    history: recentHistory,
+                    mode: currentMode,
+                    model: selectedModel
+                }),
+                success: function(data) {
+                    if (data.reply) {
+                        // Simulasi typing delay yang realistis (lebih lama untuk UAS mode)
+                        const typingDelay = currentMode === 'uas' ? 
+                            Math.random() * 2000 + 2000 : // 2-4 seconds for UAS
+                            Math.random() * 1000 + 1000;  // 1-2 seconds for default
+                        
+                        setTimeout(() => {
+                            // Hide typing indicator
+                            hideTypingIndicator();
+                            
+                            // Add bot reply to current chat history
+                            chatHistory = getCurrentChatHistory();
+                            chatHistory.push({ sender: 'bot', text: data.reply });
+                            
+                            // Update the appropriate history array
+                            if (currentMode === 'uas') {
+                                chatHistoryUAS = chatHistory;
+                            } else {
+                                chatHistoryDefault = chatHistory;
+                            }
+                            
+                            saveChatHistory();
+                            displayChatHistory();
+                            
+                            // Re-enable send button
+                            $sendBtn.prop('disabled', false).removeClass('btn-loading');
+                        }, typingDelay);
+                    } else {
+                        hideTypingIndicator();
+                        $sendBtn.prop('disabled', false).removeClass('btn-loading');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    // Hide typing indicator on error
+                    hideTypingIndicator();
+                    $sendBtn.prop('disabled', false).removeClass('btn-loading');
+                    
+                    console.error('Error:', error);
+                    
+                    // Show error message in chat
+                    let chatHistory = getCurrentChatHistory();
+                    chatHistory.push({ 
+                        sender: 'bot', 
+                        text: 'Maaf, terjadi kesalahan saat memproses pesan Anda. Silakan coba lagi.' 
+                    });
+                    
+                    // Update the appropriate history array
+                    if (currentMode === 'uas') {
+                        chatHistoryUAS = chatHistory;
+                    } else {
+                        chatHistoryDefault = chatHistory;
+                    }
+                    
+                    saveChatHistory();
+                    displayChatHistory();
+                }
+            });
+        }
     }
 
     // Function to clear storage and cache
