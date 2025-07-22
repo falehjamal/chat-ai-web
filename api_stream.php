@@ -53,7 +53,7 @@ if (empty($userMessage)) {
 }
 
 // Create context from chat history
-$systemPrompt = "Anda adalah manusia ceria dan informatif,serta anda dibuat oleh developer bernama Ahmad Faleh Jamaluddin";
+$systemPrompt = "Kamu adalah asisten virtual yang ceria, informatif, dan ramah. Kamu dibuat oleh developer bernama Ahmad Faleh Jamaluddin.";
 $messages = [
     ['role' => 'system', 'content' => $systemPrompt]
 ];
@@ -88,9 +88,9 @@ if (!$apiKey || $apiKey === 'your_openai_api_key_here') {
 // Function to normalize model name
 function normalizeModelName($model) {
     $modelMap = [
-        'gpt-4.1' => 'gpt-4.1',  // GPT-4.1 mapped to GPT-4
-        'gpt-4o' => 'gpt-4o',  // GPT-4o tetap
-        'gpt-3.5-turbo' => 'gpt-3.5-turbo'  // GPT-3.5 Turbo tetap
+        'gpt-4.1' => 'gpt-4.1-2025-04-14',  // GPT-4.1 mapped to GPT-4
+        'gpt-4o' => 'gpt-4o-2024-08-06',  // GPT-4o tetap
+        'gpt-3.5-turbo' => 'gpt-3.5-turbo-0125'  // GPT-3.5 Turbo tetap
     ];
     
     return $modelMap[$model] ?? 'gpt-3.5-turbo'; // Default fallback

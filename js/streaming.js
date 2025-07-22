@@ -8,6 +8,51 @@ class StreamingChat {
         this.typingSpeed = 30; // ms per character for typing effect
     }
 
+    // Send message with streaming response for math mode with optional image
+    sendMathMessageWithStreaming(message, chatHistory, endpoint = 'api_uas_math_stream.php', model = 'gpt-4o', imageBase64 = null, onComplete = null) {
+        console.log('🚀 Starting sendMathMessageWithStreaming');
+        console.log('📸 Image:', imageBase64 ? 'Present (' + imageBase64.length + ' chars)' : 'No image (text only)');
+        console.log('🎯 Endpoint:', endpoint);
+        console.log('🤖 Model:', model);
+        
+        if (this.isStreaming) {
+            console.warn('Already streaming, please wait...');
+            return;
+        }
+
+        this.isStreaming = true;
+        this.streamingText = '';
+
+        // Add user message to chat immediately (with or without image indicator)
+        const displayMessage = message || (imageBase64 ? 'Gambar soal matematika' : 'Pertanyaan matematika');
+        this.addUserMessage(displayMessage, !!imageBase64);
+
+        // Create bot message placeholder with typing indicator
+        this.currentBotMessageElement = this.createBotMessagePlaceholder();
+        
+        // Show typing indicator
+        this.showTypingIndicator();
+
+        // Prepare data for streaming with image
+        // Note: Even though UAS Math doesn't use chat history for API, we still track it locally
+        const streamData = {
+            message: message,
+            history: [], // UAS Math API doesn't use history, but we still save locally
+            model: model,
+            image: imageBase64
+        };
+
+        console.log('📤 Sending stream data:', JSON.stringify({
+            message: message,
+            historyLength: 0, // Always 0 for UAS Math API
+            model: model,
+            imageLength: imageBase64 ? imageBase64.length : 0
+        }));
+
+        // Start streaming request with specified endpoint
+        this.startStreamingRequest(streamData, endpoint, onComplete);
+    }
+
     // Send message with streaming response
     sendMessageWithStreaming(message, chatHistory, endpoint = 'api_stream.php', model = 'gpt-4', onComplete = null) {
         if (this.isStreaming) {
@@ -114,6 +159,8 @@ class StreamingChat {
 
     // Handle stream events
     handleStreamEvent(data, eventType) {
+        console.log('📨 Handling stream event:', eventType, data);
+        
         switch (eventType) {
             case 'status':
                 if (data.type === 'typing_start') {
@@ -122,10 +169,24 @@ class StreamingChat {
                     this.hideTypingIndicator();
                     this.streamingText = data.full_text || this.streamingText;
                     this.finalizeMessage();
+                } else if (data.status) {
+                    // Handle status messages from math API
+                    console.log('📊 Status:', data.status);
+                }
+                break;
+
+            case 'stream':
+                // Handle streaming content from math API
+                console.log('🌊 Stream content received:', data.content ? data.content.length + ' chars' : 'no content');
+                if (data.content) {
+                    this.hideTypingIndicator();
+                    this.appendToStreamingMessage(data.content);
+                    this.streamingText += data.content;
                 }
                 break;
 
             case 'chunk':
+                console.log('📦 Chunk received:', data.content ? data.content.length + ' chars' : 'no content');
                 if (data.content) {
                     this.hideTypingIndicator();
                     this.appendToStreamingMessage(data.content);
@@ -134,23 +195,40 @@ class StreamingChat {
                 break;
 
             case 'complete':
+                console.log('✅ Stream completed');
                 this.hideTypingIndicator();
                 this.finalizeMessage();
                 break;
 
             case 'error':
+                console.error('❌ Stream error:', data.error);
                 this.handleStreamError(data.error);
                 break;
 
             default:
-                console.log('Unknown event type:', eventType, data);
+                // Handle default message format (fallback)
+                console.log('🔄 Default handler for event:', eventType);
+                if (data.content) {
+                    console.log('📝 Content in default handler:', data.content.length + ' chars');
+                    this.hideTypingIndicator();
+                    this.appendToStreamingMessage(data.content);
+                    this.streamingText += data.content;
+                } else {
+                    console.log('❓ Unknown event type:', eventType, data);
+                }
         }
     }
 
     // Add user message to chat
-    addUserMessage(message) {
+    addUserMessage(message, hasImage = false) {
         const $chatBox = $('#chat-box');
-        const $messageDiv = $('<div>').addClass('user').text(message);
+        let displayMessage = message;
+        
+        if (hasImage) {
+            displayMessage = message ? `📷 ${message}` : '📷 Gambar soal matematika';
+        }
+        
+        const $messageDiv = $('<div>').addClass('user').text(displayMessage);
         $chatBox.append($messageDiv);
         this.scrollToBottom();
     }
@@ -210,24 +288,67 @@ class StreamingChat {
             this.currentBotMessageElement.removeAttr('id');
             this.hideTypingIndicator();
             
-            // Replace streaming content with final formatted content
+            // Replace streaming content with final formatted content using markdown renderer
             const finalText = this.streamingText;
-            this.currentBotMessageElement.html(this.formatBotResponse(finalText));
+            const formattedHtml = this.formatBotResponseWithMath(finalText);
+            this.currentBotMessageElement.html(formattedHtml);
+            
+            // Render math expressions
+            if (window.markdownMathRenderer) {
+                markdownMathRenderer.renderMath(this.currentBotMessageElement[0]);
+            }
         }
     }
 
-    // Format bot response like the main app
-    formatBotResponse(text) {
+    // Format bot response with markdown and math rendering - ALL FORMATTING IN FRONTEND
+    formatBotResponseWithMath(text) {
+        if (!text) return '';
+        
+        // ALWAYS use the markdown math renderer for ALL modes
+        if (window.markdownMathRenderer) {
+            console.log('🎨 Using frontend renderer for ALL formatting');
+            return markdownMathRenderer.render(text);
+        } else {
+            // Enhanced fallback formatting
+            console.log('⚠️ Markdown renderer not available, using enhanced fallback');
+            return this.formatBotResponseEnhanced(text);
+        }
+    }
+
+    // Enhanced fallback formatting with more regex processing
+    formatBotResponseEnhanced(text) {
         if (!text) return '';
         
         let formatted = text
-            // Ganti asterisk (*) dengan bullet sederhana di awal baris
-            .replace(/^\s*\*\s+/gm, '• ')
-            // Hapus asterisk lainnya yang bukan di awal baris
-            .replace(/\*/g, '')
-            // Bersihkan line breaks berlebihan (lebih dari 2)
+            // Clean up excessive line breaks first
             .replace(/\n{3,}/g, '\n\n')
-            // Trim whitespace di awal dan akhir
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n')
+            // Headers
+            .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+            .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+            .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
+            // Bold and italic
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            // Code
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            // Horizontal rules
+            .replace(/^---$/gm, '<hr>')
+            // Lists
+            .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
+            .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+            // Convert double line breaks to paragraph breaks
+            .replace(/\n\n/g, '</p><p>')
+            // Add opening and closing p tags
+            .replace(/^/, '<p>')
+            .replace(/$/, '</p>')
+            // Convert remaining single line breaks to <br>
+            .replace(/\n/g, '<br>')
+            // Clean up empty paragraphs
+            .replace(/<p>\s*<\/p>/g, '')
+            .replace(/<p><\/p>/g, '')
+            // Clean up
             .trim();
             
         return formatted;

@@ -24,6 +24,7 @@ body {
 #mode-selector {
     width: 90%;
     max-width: 900px;
+    margin-top: 20px;
     margin-bottom: 20px;
     display: flex;
     gap: 10px;
@@ -90,6 +91,8 @@ body {
     border-color: #3b82f6;
     color: #3b82f6;
 }
+
+/* Removed math-mode specific styling - all buttons use same style */
 
 /* Streaming Chat Styles */
 .message.streaming {
@@ -324,6 +327,7 @@ body {
     border-radius: 16px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     margin: 20px;
+    margin-top: 0;
     position: relative;
 }
 
@@ -380,6 +384,217 @@ body {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* ChatGPT-style Mathematics and Markdown Rendering */
+.bot-message .message-content {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: #1f2937;
+}
+
+/* Reduce excessive spacing between elements */
+.bot-message .message-content > * {
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+.bot-message .message-content > *:first-child {
+    margin-top: 0;
+}
+
+.bot-message .message-content > *:last-child {
+    margin-bottom: 0;
+}
+
+/* Headers */
+.bot-message h1, .bot-message h2, .bot-message h3, .bot-message h4, .bot-message h5, .bot-message h6 {
+    font-weight: 600;
+    margin: 12px 0 6px 0;
+    color: #111827;
+}
+
+.bot-message h1 { font-size: 1.5em; }
+.bot-message h2 { font-size: 1.3em; }
+.bot-message h3 { font-size: 1.1em; }
+
+/* Bold text */
+.bot-message strong, .bot-message b {
+    font-weight: 600;
+    color: #111827;
+}
+
+/* Italic text */
+.bot-message em, .bot-message i {
+    font-style: italic;
+}
+
+/* Horizontal rules (section separators) */
+.bot-message hr {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 16px 0;
+    opacity: 0.6;
+}
+
+/* Code blocks */
+.bot-message code {
+    background: #f3f4f6;
+    color: #1f2937;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+}
+
+.bot-message pre {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+.bot-message pre code {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+}
+
+/* Lists */
+.bot-message ul, .bot-message ol {
+    margin: 12px 0;
+    padding-left: 20px;
+}
+
+.bot-message li {
+    margin: 4px 0;
+}
+
+/* Blockquotes */
+.bot-message blockquote {
+    border-left: 4px solid #3b82f6;
+    padding-left: 16px;
+    margin: 12px 0;
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* Links */
+.bot-message a {
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.bot-message a:hover {
+    text-decoration: underline;
+}
+
+/* Mathematics styling */
+.MathJax {
+    font-size: 1.1em !important;
+}
+
+/* Inline math */
+.MathJax_Display {
+    margin: 12px 0 !important;
+    text-align: center;
+}
+
+/* Math blocks with boxed answers */
+.bot-message .math-boxed {
+    background: #f0f9ff;
+    border: 2px solid #3b82f6;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 16px 0;
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Step-by-step solution styling */
+.bot-message .solution-step {
+    margin: 12px 0;
+    padding: 8px 0;
+}
+
+.bot-message .solution-step:not(:last-child) {
+    border-bottom: 1px solid #f3f4f6;
+}
+
+/* Answer highlighting */
+.bot-message .answer-box {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+    text-align: center;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Formula highlighting */
+.bot-message .formula-highlight {
+    background: #fef3c7;
+    padding: 2px 4px;
+    border-radius: 4px;
+    border: 1px solid #f59e0b;
+}
+
+/* Table styling */
+.bot-message table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 0.9em;
+}
+
+.bot-message th, .bot-message td {
+    border: 1px solid #e5e7eb;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.bot-message th {
+    background: #f9fafb;
+    font-weight: 600;
+}
+
+/* Ensure proper spacing between paragraphs */
+.bot-message p {
+    margin: 12px 0;
+}
+
+.bot-message p:first-child {
+    margin-top: 0;
+}
+
+.bot-message p:last-child {
+    margin-bottom: 0;
+}
+
+/* Special styling for mathematical expressions */
+.math-expression {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-family: 'Times New Roman', serif;
+    text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .bot-message .message-content {
+        font-size: 14px;
+    }
+    
+    .MathJax {
+        font-size: 1em !important;
+    }
 }
 
 .user {
@@ -769,6 +984,94 @@ body {
     color: #2d3748;
 }
 
+/* Image Preview Styles */
+#image-preview-container {
+    position: relative;
+    margin-bottom: 12px;
+    max-width: 300px;
+}
+
+#image-preview {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: block;
+}
+
+#remove-image {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+#remove-image:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+#image-btn {
+    background: #8b5cf6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    margin-right: 8px;
+}
+
+#image-btn:hover {
+    background: #7c3aed;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+#image-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Drag and drop styles */
+#user-input.drag-over {
+    border-color: #8b5cf6;
+    background-color: #f3f4f6;
+}
+
+/* Math mode specific styling */
+.math-mode-indicator {
+    position: absolute;
+    top: -30px;
+    left: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+#input-container {
+    position: relative;
+}
+
 .progress-bar {
     flex: 1;
     height: 8px;
@@ -782,4 +1085,75 @@ body {
     background: linear-gradient(90deg, #4a90e2, #357abd);
     width: 0%;
     transition: width 0.4s ease;
-} 
+}
+
+/* Enhanced Mathematical Formatting Classes */
+.choice-option {
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: #f8fafc;
+    border-left: 3px solid #3b82f6;
+    border-radius: 4px;
+}
+
+.choice-option strong {
+    color: #1e40af;
+    margin-right: 8px;
+}
+
+.solution-step {
+    margin: 12px 0;
+    padding: 10px 16px;
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.answer-section {
+    margin: 16px 0;
+    padding: 12px 16px;
+    background: #dcfce7;
+    border: 2px solid #16a34a;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.solution-section {
+    margin: 16px 0;
+    padding: 12px 16px;
+    background: #eff6ff;
+    border: 2px solid #2563eb;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.math-equation {
+    margin: 12px 0;
+    padding: 8px 12px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+}
+
+.conclusion {
+    margin: 16px 0;
+    padding: 12px 16px;
+    background: #fdf2f8;
+    border: 2px solid #be185d;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #be185d;
+}
+
+.answer-box {
+    display: inline-block;
+    margin: 4px 8px;
+    padding: 8px 16px;
+    background: #1e40af;
+    color: white;
+    border-radius: 8px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}

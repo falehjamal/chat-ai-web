@@ -58,7 +58,7 @@ if (empty($userMessage)) {
 }
 
 // Create system prompt for UAS mode - no history context needed
-$systemPrompt = "Anda adalah asisten AI yang membantu mahasiswa menjawab soal UAS. Berikan jawaban singkat, padat, dan relevan. Sebelum menjawab, pikirkan dulu kemungkinan jawaban secara runtut, lalu simpulkan jawaban akhir secara jelas.";
+$systemPrompt = "Anda adalah asisten AI yang membantu mahasiswa menjawab soal UAS. Berikan jawaban singkat, dan relevan. Sebelum menjawab, pikirkan dulu kemungkinan jawaban secara runtut, lalu simpulkan jawaban akhir secara singkat dan jelas.";
 
 
 // Get API key from environment
@@ -71,9 +71,9 @@ if (!$apiKey || $apiKey === 'your_openai_api_key_here') {
 // Function to normalize model name
 function normalizeModelName($model) {
     $modelMap = [
-        'gpt-4.1' => 'gpt-4.1',  // GPT-4.1 mapped to GPT-4
-        'gpt-4o' => 'gpt-4o',  // GPT-4o tetap
-        'gpt-3.5-turbo' => 'gpt-3.5-turbo'  // GPT-3.5 Turbo tetap
+        'gpt-4.1' => 'gpt-4.1-2025-04-14',  // GPT-4.1 mapped to GPT-4
+        'gpt-4o' => 'gpt-4o-2024-08-06',  // GPT-4o tetap
+        'gpt-3.5-turbo' => 'gpt-3.5-turbo-0125'  // GPT-3.5 Turbo tetap
     ];
     
     return $modelMap[$model] ?? 'gpt-4o'; // Default fallback untuk UAS mode
