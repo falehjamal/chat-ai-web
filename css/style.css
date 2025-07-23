@@ -788,10 +788,10 @@ body {
 }
 
 #clear-cache-btn {
-    background: #fbbf24;
-    color: #ffffff;
-    border: 1px solid #fbbf24;
-    padding: 8px 12px;
+    background: #fff;
+    color: #374151;
+    border: 1px solid #e2e8f0;
+    padding: 8px 16px;
     border-radius: 22px;
     font-weight: 500;
     cursor: pointer;
@@ -799,23 +799,20 @@ body {
     height: 48px;
     min-width: 90px;
     flex-shrink: 0;
-    font-size: 13px;
+    font-size: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 8px;
     white-space: nowrap;
+    box-shadow: none;
 }
-
-#clear-cache-btn:hover {
-    background: #f59e0b;
-    border-color: #f59e0b;
-    transform: scale(1.05);
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-}
-
-#clear-cache-btn:active {
-    transform: scale(0.95);
+#clear-cache-btn:hover, #clear-cache-btn:active {
+    background: #fff;
+    color: #1e293b;
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(59,130,246,0.04);
+    transform: none;
 }
 
 #send-btn {
