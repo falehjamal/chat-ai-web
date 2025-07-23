@@ -1,4 +1,7 @@
 <?php
+// Set timezone to Asia/Jakarta (GMT+7)
+date_default_timezone_set('Asia/Jakarta');
+
 // Load environment helper
 require_once 'env_helper.php';
 
@@ -106,7 +109,7 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, [
 
 // Set up streaming callback
 $fullResponse = '';
-curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $chunk) use (&$fullResponse, $userMessage, $database) {
+curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $chunk) use (&$fullResponse, $userMessage, $database, $selectedModel) {
     $lines = explode("\n", $chunk);
     
     foreach ($lines as $line) {
@@ -126,8 +129,13 @@ curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $chunk) use (&$fullRespons
                 
                 // Save to database with UAS mode indicator
                 try {
+                    require_once 'model_config.php';
                     $ipAddress = Database::getRealIpAddress();
-                    $database->saveChatHistory($userMessage, $fullResponse, $ipAddress, 'uas');
+                    
+                    // Calculate tokens and save chat history
+                    $tokenCount = ModelConfig::estimateConversationTokens($userMessage, $fullResponse);
+                    
+                    $database->saveChatHistory($userMessage, $fullResponse, $ipAddress, 'uas', $tokenCount, $selectedModel);
                 } catch (Exception $e) {
                     error_log("Gagal menyimpan chat history UAS: " . $e->getMessage());
                 }

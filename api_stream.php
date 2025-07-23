@@ -1,4 +1,7 @@
 <?php
+// Set timezone to Asia/Jakarta (GMT+7)
+date_default_timezone_set('Asia/Jakarta');
+
 // Load environment helper
 require_once 'env_helper.php';
 
@@ -120,7 +123,7 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, [
 
 // Set up streaming callback
 $fullResponse = '';
-curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $chunk) use (&$fullResponse) {
+curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $chunk) use (&$fullResponse, $userMessage, $selectedModel) {
     $lines = explode("\n", $chunk);
     
     foreach ($lines as $line) {
@@ -141,10 +144,16 @@ curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $chunk) use (&$fullRespons
                 // Save to database if needed
                 try {
                     require_once 'database.php';
+                    require_once 'model_config.php';
+                    
                     $database = getChatDatabase();
                     $database->initialize();
                     $ipAddress = Database::getRealIpAddress();
-                    $database->saveChatHistory($_POST['original_message'] ?? $_GET['message'] ?? '', $fullResponse, $ipAddress, 'default');
+                    
+                    // Calculate tokens and save chat history
+                    $tokenCount = ModelConfig::estimateConversationTokens($userMessage, $fullResponse);
+                    
+                    $database->saveChatHistory($userMessage, $fullResponse, $ipAddress, 'default', $tokenCount, $selectedModel);
                 } catch (Exception $e) {
                     error_log("Gagal menyimpan chat history: " . $e->getMessage());
                 }

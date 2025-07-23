@@ -4,6 +4,9 @@
  * Menangani koneksi database dan operasi CRUD untuk chat history
  */
 
+// Set timezone to Asia/Jakarta (GMT+7)
+date_default_timezone_set('Asia/Jakarta');
+
 require_once 'env_helper.php';
 
 class Database {
@@ -50,6 +53,10 @@ class Database {
             ];
 
             $this->pdo = new PDO($dsn, $this->username, $this->password, $options);
+            
+            // Set MySQL timezone to Asia/Jakarta (GMT+7)
+            $this->pdo->exec("SET time_zone = '+07:00'");
+            
             return $this->pdo;
         } catch (PDOException $e) {
             throw new Exception("Koneksi database gagal: " . $e->getMessage());
@@ -64,26 +71,44 @@ class Database {
         
         $sql = "CREATE TABLE IF NOT EXISTS chat_history (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            message TEXT NOT NULL,
-            response TEXT NOT NULL,
             ip_address VARCHAR(45) NOT NULL,
+            user TEXT NOT NULL,
+            response TEXT NOT NULL,
+            jumlah_token INT DEFAULT 0,
+            model VARCHAR(100) DEFAULT 'gpt-3.5-turbo',
             mode VARCHAR(20) DEFAULT 'default',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX idx_ip_address (ip_address),
             INDEX idx_created_at (created_at),
-            INDEX idx_mode (mode)
+            INDEX idx_mode (mode),
+            INDEX idx_model (model),
+            INDEX idx_token_count (jumlah_token)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
         try {
             $pdo->exec($sql);
             
-            // Add mode column if it doesn't exist (for existing tables)
-            $alterSql = "ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS mode VARCHAR(20) DEFAULT 'default'";
+            // Add new columns if they don't exist (for existing tables)
+            $alterSqls = [
+                "ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS mode VARCHAR(20) DEFAULT 'default'",
+                "ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS jumlah_token INT DEFAULT 0",
+                "ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS model VARCHAR(100) DEFAULT 'gpt-3.5-turbo'"
+            ];
+            
+            foreach ($alterSqls as $alterSql) {
+                try {
+                    $pdo->exec($alterSql);
+                } catch (PDOException $e) {
+                    // Column might already exist, ignore error
+                }
+            }
+            
+            // Try to rename message column to user if it exists
             try {
-                $pdo->exec($alterSql);
+                $pdo->exec("ALTER TABLE chat_history CHANGE COLUMN message user TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL");
             } catch (PDOException $e) {
-                // Column might already exist, ignore error
+                // Column might already be renamed or not exist, ignore error
             }
             
             return true;
@@ -95,14 +120,14 @@ class Database {
     /**
      * Menyimpan percakapan chat ke database
      */
-    public function saveChatHistory($message, $response, $ipAddress, $mode = 'default') {
+    public function saveChatHistory($userMessage, $response, $ipAddress, $mode = 'default', $jumlahToken = 0, $model = 'gpt-3.5-turbo') {
         $pdo = $this->connect();
         
-        $sql = "INSERT INTO chat_history (message, response, ip_address, mode) VALUES (?, ?, ?, ?)";
+        $sql = "INSERT INTO chat_history (ip_address, user, response, jumlah_token, model, mode) VALUES (?, ?, ?, ?, ?, ?)";
         
         try {
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$message, $response, $ipAddress, $mode]);
+            $stmt->execute([$ipAddress, $userMessage, $response, $jumlahToken, $model, $mode]);
             return $pdo->lastInsertId();
         } catch (PDOException $e) {
             throw new Exception("Gagal menyimpan chat history: " . $e->getMessage());
@@ -112,9 +137,9 @@ class Database {
     /**
      * Method alias untuk kompatibilitas
      */
-    public function saveMessage($message, $response, $mode = 'default') {
+    public function saveMessage($message, $response, $mode = 'default', $jumlahToken = 0, $model = 'gpt-3.5-turbo') {
         $ipAddress = self::getRealIpAddress();
-        return $this->saveChatHistory($message, $response, $ipAddress, $mode);
+        return $this->saveChatHistory($message, $response, $ipAddress, $mode, $jumlahToken, $model);
     }
 
     /**
@@ -123,7 +148,7 @@ class Database {
     public function getChatHistory($ipAddress = null, $limit = 50, $offset = 0) {
         $pdo = $this->connect();
         
-        $sql = "SELECT id, message, response, ip_address, created_at, updated_at FROM chat_history";
+        $sql = "SELECT id, ip_address, user, response, jumlah_token, model, mode, created_at, updated_at FROM chat_history";
         $params = [];
         
         if ($ipAddress) {

@@ -1,4 +1,7 @@
 <?php
+// Set timezone to Asia/Jakarta (GMT+7)
+date_default_timezone_set('Asia/Jakarta');
+
 // Include model configuration
 require_once 'model_config.php';
 

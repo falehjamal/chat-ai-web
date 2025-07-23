@@ -287,4 +287,37 @@ class ModelConfig {
     public static function getAllModels() {
         return self::$models;
     }
+
+    /**
+     * Estimasi jumlah token dari teks (approximate)
+     * 1 token ≈ 4 karakter untuk bahasa Inggris
+     * 1 token ≈ 2-3 karakter untuk bahasa Indonesia
+     */
+    public static function estimateTokenCount($text) {
+        if (empty($text)) {
+            return 0;
+        }
+        
+        // Remove extra whitespace and normalize
+        $text = trim(preg_replace('/\s+/', ' ', $text));
+        
+        // Rough estimation: 1 token per 3.5 characters (average for mixed languages)
+        $charCount = mb_strlen($text, 'UTF-8');
+        $estimatedTokens = ceil($charCount / 3.5);
+        
+        return max(1, $estimatedTokens); // Minimum 1 token
+    }
+
+    /**
+     * Estimasi total token untuk conversation (user + response)
+     */
+    public static function estimateConversationTokens($userMessage, $botResponse) {
+        $userTokens = self::estimateTokenCount($userMessage);
+        $responseTokens = self::estimateTokenCount($botResponse);
+        
+        // Add some overhead for system messages and formatting
+        $overhead = 10;
+        
+        return $userTokens + $responseTokens + $overhead;
+    }
 }

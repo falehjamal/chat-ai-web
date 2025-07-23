@@ -1,4 +1,7 @@
 <?php
+// Set timezone to Asia/Jakarta (GMT+7)
+date_default_timezone_set('Asia/Jakarta');
+
 // Load environment helper
 require_once 'env_helper.php';
 
@@ -122,6 +125,9 @@ $requestData = [
     'temperature' => 0.3 // Lower temperature for more consistent math solutions
 ];
 
+// Initialize response collection
+$fullResponse = '';
+
 // Initialize cURL
 $ch = curl_init();
 curl_setopt_array($ch, [
@@ -133,7 +139,7 @@ curl_setopt_array($ch, [
         'Authorization: Bearer ' . $apiKey,
         'Content-Type: application/json',
     ],
-    CURLOPT_WRITEFUNCTION => function($ch, $data) {
+    CURLOPT_WRITEFUNCTION => function($ch, $data) use (&$fullResponse, $userMessage, $selectedModel) {
         // Add debug logging
         error_log("UAS Math API: Received data chunk: " . strlen($data) . " bytes");
         
@@ -143,7 +149,24 @@ curl_setopt_array($ch, [
         foreach ($lines as $line) {
             $line = trim($line);
             
-            if (empty($line) || $line === 'data: [DONE]') {
+            if (empty($line)) {
+                continue;
+            }
+            
+            if ($line === 'data: [DONE]') {
+                // Save to database when streaming is done
+                try {
+                    require_once 'database.php';
+                    $database = getChatDatabase();
+                    $database->initialize();
+                    $ipAddress = Database::getRealIpAddress();
+                    
+                    // Calculate tokens and save chat history
+                    $tokenCount = ModelConfig::estimateConversationTokens($userMessage, $fullResponse);
+                    $database->saveChatHistory($userMessage, $fullResponse, $ipAddress, 'uas-math', $tokenCount, $selectedModel);
+                } catch (Exception $e) {
+                    error_log("Gagal menyimpan chat history UAS Math: " . $e->getMessage());
+                }
                 continue;
             }
             
@@ -153,6 +176,7 @@ curl_setopt_array($ch, [
                 
                 if (json_last_error() === JSON_ERROR_NONE && isset($decoded['choices'][0]['delta']['content'])) {
                     $content = $decoded['choices'][0]['delta']['content'];
+                    $fullResponse .= $content; // Collect full response
                     error_log("UAS Math API: Sending content: " . substr($content, 0, 50) . "...");
                     sendSSE(['content' => $content], 'stream');
                 } else {
