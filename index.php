@@ -1,3 +1,10 @@
+<?php
+// Include model configuration
+require_once 'model_config.php';
+
+// Get default model for default mode
+$defaultModel = ModelConfig::getDefaultModelForMode('default');
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39,19 +46,8 @@
     <div id="model-selector">
         <label for="gpt-model">Model :</label>
         <select id="gpt-model" class="model-select">
-            <option value="gpt-3.5-turbo">
-                GPT-3.5 Turbo — Cepat & Ekonomis (Cocok untuk obrolan ringan)
-            </option>
-            <option value="gpt-4o">
-                GPT-4o — Pintar & Fleksibel (Ideal untuk tugas, UAS, dan esai)
-            </option>
-            <option value="gpt-4.1">
-                GPT-4.1 — Akurasi Tinggi (Terbaik untuk matematika dan logika kompleks)
-            </option>
-
+            <?= ModelConfig::getHtmlOptions($defaultModel) ?>
         </select>
-    </div>
-    <div style="width:90%;max-width:900px;display:flex;justify-content:flex-end;gap:10px;margin-bottom:10px;">
         <button id="clear-cache-btn" title="Hapus semua cache dan localStorage">🗑️ Clear Data</button>
     </div>
     <div id="chat-container">
@@ -84,6 +80,7 @@
     <script src="js/jquery.min.js"></script>
     <script src="js/tesseract.min.js"></script>
     <script src="js/markdown-math.js"></script>
+    <script src="js/model-config.js"></script>
     <script src="js/streaming.js"></script>
     <script src="js/app.js"></script>
 </body>

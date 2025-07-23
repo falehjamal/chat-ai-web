@@ -2,6 +2,9 @@
 // Load environment helper
 require_once 'env_helper.php';
 
+// Load model configuration
+require_once 'model_config.php';
+
 // Set headers for SSE (Server-Sent Events)
 header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
@@ -43,7 +46,7 @@ if (json_last_error() !== JSON_ERROR_NONE) {
 }
 
 $userMessage = $data['message'] ?? '';
-$selectedModel = $data['model'] ?? 'gpt-4o';
+$selectedModel = $data['model'] ?? ModelConfig::getDefaultModelForMode('uas-math');
 $imageBase64 = $data['image'] ?? '';
 
 // Mode UAS Matematika bisa dengan atau tanpa gambar
@@ -102,12 +105,20 @@ $messages[] = [
     'content' => $userContent
 ];
 
+// Validate and get model configuration
+if (!ModelConfig::isValidModel($selectedModel)) {
+    sendSSE(['error' => "Model '$selectedModel' tidak valid atau tidak aktif"], 'error');
+    exit;
+}
+
+$modelConfig = ModelConfig::getApiConfig($selectedModel);
+
 // Prepare OpenAI API request
 $requestData = [
-    'model' => $selectedModel,
+    'model' => $modelConfig['model'],
     'messages' => $messages,
     'stream' => true,
-    'max_tokens' => 2000,
+    'max_tokens' => $modelConfig['max_tokens'],
     'temperature' => 0.3 // Lower temperature for more consistent math solutions
 ];
 

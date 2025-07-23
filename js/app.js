@@ -1,9 +1,12 @@
-$(document).ready(function() {
+$(document).ready(async function() {
     const MAX_HISTORY = 10; // Maximum number of messages to keep for context
+    
+    // Initialize model configuration manager
+    await modelConfigManager.loadConfig();
     
     // Current mode tracking
     let currentMode = 'default';
-    let selectedModel = 'gpt-3.5-turbo'; // Default model sesuai dengan HTML
+    let selectedModel = modelConfigManager.getDefaultModelForMode('default'); // Use centralized default
     let currentImage = null; // For storing current image in UAS Math mode
     
     // Debug: Check if Tesseract is available
@@ -62,29 +65,45 @@ $(document).ready(function() {
     $modeDefault.on('click', function() {
         if (currentMode !== 'default') {
             currentMode = 'default';
-            updateModeButtons();
-            displayChatHistory();
-            clearImagePreview();
+            updateModeAndModel();
         }
     });
     
     $modeUAS.on('click', function() {
         if (currentMode !== 'uas') {
             currentMode = 'uas';
-            updateModeButtons();
-            displayChatHistory();
-            clearImagePreview();
+            updateModeAndModel();
         }
     });
     
     $modeUASMath.on('click', function() {
         if (currentMode !== 'uas-math') {
             currentMode = 'uas-math';
-            updateModeButtons();
-            displayChatHistory();
-            clearImagePreview();
+            updateModeAndModel();
         }
     });
+
+    // Function to update mode and automatically switch to recommended model
+    function updateModeAndModel() {
+        updateModeButtons();
+        displayChatHistory();
+        clearImagePreview();
+        
+        // Auto-select recommended model for the new mode
+        const recommendedModel = modelConfigManager.getDefaultModelForMode(currentMode);
+        if (recommendedModel && modelConfigManager.isValidModel(recommendedModel)) {
+            selectedModel = recommendedModel;
+            $modelSelect.val(selectedModel);
+            
+            // Save model preference to localStorage
+            localStorage.setItem('selectedGPTModel', selectedModel);
+            
+            console.log(`Switched to ${currentMode} mode, selected model: ${selectedModel}`);
+        }
+        
+        // Highlight recommended models for current mode
+        modelConfigManager.highlightRecommendedModels($modelSelect, currentMode);
+    }
     
     // Model selection handler
     $modelSelect.on('change', function() {
@@ -130,12 +149,20 @@ $(document).ready(function() {
     autoResizeTextarea($userInput);
     updateModeButtons();
     
-    // Load saved model preference
+    // Initialize model dropdown and load saved preference
+    modelConfigManager.updateModelSelect($modelSelect, selectedModel);
     const savedModel = localStorage.getItem('selectedGPTModel');
-    if (savedModel) {
+    if (savedModel && modelConfigManager.isValidModel(savedModel)) {
         selectedModel = savedModel;
         $modelSelect.val(savedModel);
+    } else {
+        // If saved model is invalid, use default for current mode
+        selectedModel = modelConfigManager.getDefaultModelForMode(currentMode);
+        $modelSelect.val(selectedModel);
     }
+    
+    // Highlight recommended models for current mode
+    modelConfigManager.highlightRecommendedModels($modelSelect, currentMode);
     
     // Clean up any leftover typing indicators
     hideTypingIndicator();
@@ -176,10 +203,14 @@ $(document).ready(function() {
         const chatHistory = getCurrentChatHistory();
         
         chatHistory.forEach(msg => {
-            const $messageDiv = $('<div>').addClass(msg.sender);
+            const $messageDiv = $('<div>').addClass('message');
+            const $messageContent = $('<div>').addClass('message-content');
+            const $messageText = $('<div>').addClass('message-text');
             
-            // Format text untuk bot messages
             if (msg.sender === 'bot') {
+                $messageDiv.addClass('bot-message');
+                
+                // Format text untuk bot messages
                 const formattedText = formatBotMessage(msg.text);
                 
                 // Add copy button for bot messages
@@ -188,7 +219,7 @@ $(document).ready(function() {
                     ${formattedText}
                 `;
                 
-                $messageDiv.html(messageWithCopyBtn);
+                $messageContent.html(messageWithCopyBtn);
                 
                 // Setup copy functionality for this message
                 setupCopyButtonForMessage($messageDiv, msg.text);
@@ -201,17 +232,21 @@ $(document).ready(function() {
                 // Add timestamp if available
                 if (msg.timestamp) {
                     const timestamp = new Date(msg.timestamp).toLocaleTimeString();
-                    $messageDiv.append(`<div class="timestamp">${timestamp}</div>`);
+                    $messageContent.append(`<div class="timestamp">${timestamp}</div>`);
                 }
             } else {
+                $messageDiv.addClass('user-message');
+                
                 // User messages - handle image indicator
                 let displayText = msg.text;
                 if (msg.hasImage) {
                     displayText = `📷 ${msg.text}`;
                 }
-                $messageDiv.text(displayText);
+                $messageText.text(displayText);
+                $messageContent.append($messageText);
             }
             
+            $messageDiv.append($messageContent);
             $chatBox.append($messageDiv);
         });
         
@@ -445,6 +480,13 @@ $(document).ready(function() {
 
     function sendMessage() {
         const userMessage = $userInput.val().trim();
+        
+        // Validate selected model
+        if (!modelConfigManager.isValidModel(selectedModel)) {
+            alert(`Model '${selectedModel}' tidak valid atau tidak aktif. Silakan pilih model lain.`);
+            $sendBtn.prop('disabled', false).removeClass('btn-loading');
+            return;
+        }
         
         // For UAS Math mode, allow either image or text (not both required)
         if (currentMode === 'uas-math') {

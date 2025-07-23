@@ -2,6 +2,9 @@
 // Load environment helper
 require_once 'env_helper.php';
 
+// Load model configuration
+require_once 'model_config.php';
+
 // Set headers for SSE (Server-Sent Events)
 header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
@@ -44,7 +47,7 @@ if (empty($rawInput)) {
     }
     $userMessage = $data['message'] ?? '';
     $chatHistory = $data['history'] ?? [];
-    $selectedModel = $data['model'] ?? 'gpt-4'; // Default to GPT-4
+    $selectedModel = $data['model'] ?? ModelConfig::getDefaultModelForMode('default'); // Use centralized default
 }
 
 if (empty($userMessage)) {
@@ -85,28 +88,23 @@ if (!$apiKey || $apiKey === 'your_openai_api_key_here') {
     exit;
 }
 
-// Function to normalize model name
-function normalizeModelName($model) {
-    $modelMap = [
-        'gpt-4.1' => 'gpt-4.1-2025-04-14',  // GPT-4.1 mapped to GPT-4
-        'gpt-4o' => 'gpt-4o-2024-08-06',  // GPT-4o tetap
-        'gpt-3.5-turbo' => 'gpt-3.5-turbo-0125'  // GPT-3.5 Turbo tetap
-    ];
-    
-    return $modelMap[$model] ?? 'gpt-3.5-turbo'; // Default fallback
+// Validate and get model configuration
+if (!ModelConfig::isValidModel($selectedModel)) {
+    sendSSE(['error' => "Model '$selectedModel' tidak valid atau tidak aktif"], 'error');
+    exit;
 }
 
-$normalizedModel = normalizeModelName($selectedModel);
+$modelConfig = ModelConfig::getApiConfig($selectedModel);
 
 // Send typing indicator
 sendSSE(['type' => 'typing_start'], 'status');
 
 // Prepare the payload for ChatGPT with streaming
 $data = [
-    'model' => $normalizedModel,
+    'model' => $modelConfig['model'],
     'messages' => $messages,
-    'temperature' => 0.7,
-    'max_tokens' => 500,
+    'temperature' => $modelConfig['temperature'],
+    'max_tokens' => $modelConfig['max_tokens'],
     'stream' => true // Enable streaming
 ];
 

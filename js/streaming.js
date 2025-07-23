@@ -228,7 +228,12 @@ class StreamingChat {
             displayMessage = message ? `📷 ${message}` : '📷 Gambar soal matematika';
         }
         
-        const $messageDiv = $('<div>').addClass('user').text(displayMessage);
+        const $messageDiv = $('<div>').addClass('message user-message');
+        const $messageContent = $('<div>').addClass('message-content');
+        const $messageText = $('<div>').addClass('message-text').text(displayMessage);
+        
+        $messageContent.append($messageText);
+        $messageDiv.append($messageContent);
         $chatBox.append($messageDiv);
         this.scrollToBottom();
     }
@@ -236,7 +241,8 @@ class StreamingChat {
     // Create bot message placeholder
     createBotMessagePlaceholder() {
         const $chatBox = $('#chat-box');
-        const $messageDiv = $('<div>').addClass('bot streaming').attr('id', 'streaming-message');
+        const $messageDiv = $('<div>').addClass('message bot-message streaming').attr('id', 'streaming-message');
+        const $messageContent = $('<div>').addClass('message-content');
         
         const messageHtml = `
             <span class="streaming-text"></span>
@@ -247,7 +253,8 @@ class StreamingChat {
             </span>
         `;
         
-        $messageDiv.html(messageHtml);
+        $messageContent.html(messageHtml);
+        $messageDiv.append($messageContent);
         $chatBox.append($messageDiv);
         this.scrollToBottom();
         return $('#streaming-message');
@@ -292,9 +299,16 @@ class StreamingChat {
             const finalText = this.streamingText;
             const formattedHtml = this.formatBotResponseWithMath(finalText);
             
-            // Add copy button to the message
+            // Add copy button and content to message-content div
             const messageWithCopyBtn = this.addCopyButton(formattedHtml);
-            this.currentBotMessageElement.html(messageWithCopyBtn);
+            const $messageContent = this.currentBotMessageElement.find('.message-content');
+            const $messageText = $('<div>').addClass('message-text').html(formattedHtml);
+            
+            // Replace content with copy button and formatted text
+            $messageContent.html(`
+                <button class="copy-btn" title="Copy response">📋 Copy</button>
+                ${formattedHtml}
+            `);
             
             // Render math expressions
             if (window.markdownMathRenderer) {
