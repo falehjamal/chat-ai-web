@@ -1,5 +1,5 @@
 $(document).ready(async function() {
-    const MAX_HISTORY = 10; // Maximum number of messages to keep for context
+    const MAX_HISTORY = 7; // Maximum number of messages to keep for context
     
     // Initialize model configuration manager
     await modelConfigManager.loadConfig();
@@ -7,7 +7,8 @@ $(document).ready(async function() {
     // Current mode tracking
     let currentMode = 'default';
     let selectedModel = modelConfigManager.getDefaultModelForMode('default'); // Use centralized default
-    let currentImage = null; // For storing current image in UAS Math mode
+    let currentImage = null; // For storing current image in OCR High mode
+    let currentImageId = null; // For storing current image ID
     
     // Debug: Check if Tesseract is available
     console.log('Tesseract available:', typeof Tesseract !== 'undefined');
@@ -128,19 +129,20 @@ $(document).ready(async function() {
             $imagePreviewContainer.hide();
             $userInput.attr('placeholder', 'Type your message...');
             currentImage = null;
+            currentImageId = null;
         }
         
         // Update chat container mode indicator
         const $chatContainer = $('#chat-container');
         switch(currentMode) {
             case 'uas':
-                $chatContainer.attr('data-mode', 'Mode UAS');
+                $chatContainer.attr('data-mode', 'Mode OCR Low');
                 break;
             case 'uas-math':
-                $chatContainer.attr('data-mode', 'Mode UAS Matematika');
+                $chatContainer.attr('data-mode', 'Mode OCR High');
                 break;
             default:
-                $chatContainer.attr('data-mode', 'Mode Default');
+                $chatContainer.attr('data-mode', 'Mode Chat');
         }
     }
 
@@ -164,10 +166,10 @@ $(document).ready(async function() {
     // Highlight recommended models for current mode
     modelConfigManager.highlightRecommendedModels($modelSelect, currentMode);
     
-    // Clean up any leftover typing indicators
-    hideTypingIndicator();
+    // Clean up any leftover typing indicators - removed as streaming handles this
+    // hideTypingIndicator();
 
-    // Image upload functionality for UAS Math mode
+    // Image upload functionality for OCR High mode
     $imageBtn.on('click', function() {
         if (currentMode === 'uas-math') {
             $imageInput.click();
@@ -179,9 +181,17 @@ $(document).ready(async function() {
         if (file && file.type.startsWith('image/')) {
             const reader = new FileReader();
             reader.onload = function(event) {
-                currentImage = event.target.result;
-                $imagePreview.attr('src', currentImage);
-                $imagePreviewContainer.show();
+                const imageData = event.target.result;
+                
+                if (currentMode === 'uas-math') {
+                    // Mode OCR High: Langsung kirim gambar ke chat dan simpan ke localStorage
+                    handleMathImageUpload(imageData);
+                } else {
+                    // Mode lain: Tampilkan preview seperti biasa
+                    currentImage = imageData;
+                    $imagePreview.attr('src', currentImage);
+                    $imagePreviewContainer.show();
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -193,9 +203,239 @@ $(document).ready(async function() {
 
     function clearImagePreview() {
         currentImage = null;
+        currentImageId = null;
         $imagePreview.attr('src', '');
         $imagePreviewContainer.hide();
         $imageInput.val('');
+    }
+
+    // Handle image upload specifically for OCR High mode
+    function handleMathImageUpload(imageData) {
+        // Generate unique ID untuk gambar
+        const imageId = Date.now().toString();
+        
+        // Simpan gambar ke localStorage
+        localStorage.setItem(`math_image_${imageId}`, imageData);
+        
+        // Clear thumbnail preview immediately
+        clearImagePreview();
+        
+        // Set current image dan imageId untuk dikirim ke AI
+        currentImage = imageData;
+        currentImageId = imageId;
+        
+        // Note: Jangan tambahkan gambar ke chat di sini, biarkan streaming yang menangani
+        // untuk menghindari duplikasi
+        
+        // Auto-trigger OCR jika user input kosong
+        const userMessage = $userInput.val().trim();
+        if (!userMessage) {
+            // Start OCR process in background
+            performOCRForMathMode(imageData);
+        }
+    }
+
+    // Add image to chat display
+    function addImageToChat(imageData, imageId) {
+        const $messageDiv = $('<div>').addClass('message user-message');
+        const $messageContent = $('<div>').addClass('message-content');
+        
+        // Create image element with metadata
+        const $imageElement = $('<img>')
+            .attr('src', imageData)
+            .attr('alt', 'Soal Matematika')
+            .attr('data-image-id', imageId)
+            .addClass('chat-image')
+            .css({
+                'max-width': '100%',
+                'max-height': '300px',
+                'border-radius': '8px',
+                'margin': '10px 0',
+                'cursor': 'pointer'
+            });
+        
+        // Add click to enlarge functionality
+        $imageElement.on('click', function() {
+            openImageModal(imageData);
+        });
+        
+        const $imageInfo = $('<div>')
+            .addClass('image-info')
+            .html('<small style="color: #666; font-style: italic;">📷 Gambar soal matematika dikirim</small>');
+        
+        const $timestamp = $('<div>')
+            .addClass('message-time')
+            .text(new Date().toLocaleTimeString('id-ID', { hour12: false }));
+        
+        $messageContent.append($imageElement).append($imageInfo);
+        $messageDiv.append($messageContent).append($timestamp);
+        $chatBox.append($messageDiv);
+        
+        scrollToBottom();
+    }
+
+    // Open image in modal for better viewing
+    function openImageModal(imageData) {
+        // Create modal if it doesn't exist
+        let $modal = $('#image-modal');
+        if ($modal.length === 0) {
+            $modal = $('<div>')
+                .attr('id', 'image-modal')
+                .css({
+                    'position': 'fixed',
+                    'top': '0',
+                    'left': '0',
+                    'width': '100%',
+                    'height': '100%',
+                    'background': 'rgba(0,0,0,0.8)',
+                    'display': 'flex',
+                    'justify-content': 'center',
+                    'align-items': 'center',
+                    'z-index': '9999',
+                    'cursor': 'pointer'
+                })
+                .html('<img style="max-width: 90%; max-height: 90%; border-radius: 8px;">')
+                .on('click', function() {
+                    $(this).hide();
+                });
+            $('body').append($modal);
+        }
+        
+        $modal.find('img').attr('src', imageData);
+        $modal.show();
+    }
+
+    // Load image from localStorage
+    function loadImageFromLocalStorage(imageId) {
+        if (!imageId) return null;
+        
+        // Try different possible keys
+        const possibleKeys = [
+            `math_image_${imageId}`,
+            imageId,
+            `image_${imageId}`
+        ];
+        
+        for (const key of possibleKeys) {
+            const imageData = localStorage.getItem(key);
+            if (imageData) {
+                return imageData;
+            }
+        }
+        
+        return null;
+    }
+
+    // Clear all math images from localStorage
+    function clearMathImages() {
+        try {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('math_image_')) {
+                    keysToRemove.push(key);
+                }
+            }
+            
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+                console.log('Removed math image:', key);
+            });
+        } catch (error) {
+            console.error('Error clearing math images:', error);
+        }
+    }
+
+    // Cleanup old images from localStorage (keep only recent ones)
+    function cleanupOldImages() {
+        try {
+            const maxImages = 20; // Keep only last 20 images
+            const imageKeys = [];
+            
+            // Find all image keys in localStorage
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('math_image_')) {
+                    const timestamp = key.replace('math_image_', '');
+                    imageKeys.push({ key, timestamp: parseInt(timestamp) });
+                }
+            }
+            
+            // Sort by timestamp (newest first)
+            imageKeys.sort((a, b) => b.timestamp - a.timestamp);
+            
+            // Remove old images beyond maxImages limit
+            if (imageKeys.length > maxImages) {
+                const imagesToRemove = imageKeys.slice(maxImages);
+                imagesToRemove.forEach(item => {
+                    localStorage.removeItem(item.key);
+                    console.log('Removed old image:', item.key);
+                });
+            }
+        } catch (error) {
+            console.error('Error cleaning up old images:', error);
+        }
+    }
+
+    // Cleanup old images on page load
+    cleanupOldImages();
+
+    // OCR processing specifically for OCR High mode
+    async function performOCRForMathMode(imageData) {
+        try {
+            showOCRProgress();
+            
+            // Check if Tesseract is available
+            if (typeof Tesseract === 'undefined') {
+                console.warn('Tesseract tidak tersedia, melanjutkan tanpa OCR');
+                hideOCRProgress();
+                return;
+            }
+
+            const worker = Tesseract.createWorker({
+                logger: m => {
+                    console.log(m);
+                    
+                    if (m.status) {
+                        $progressText.text(getProgressMessage(m.status));
+                    }
+                    
+                    if (m.progress !== undefined) {
+                        const percentage = Math.round(m.progress * 100);
+                        $progressFill.css('width', percentage + '%');
+                        $progressPercentage.text(percentage + '%');
+                    }
+                }
+            });
+
+            await worker.load();
+            await worker.loadLanguage('ind+eng');
+            await worker.initialize('ind+eng');
+            
+            const { data: { text } } = await worker.recognize(imageData);
+            await worker.terminate();
+
+            hideOCRProgress();
+            
+            // Clean up extracted text
+            const cleanText = text.trim()
+                .replace(/\n{3,}/g, '\n\n')
+                .replace(/[ \t]+$/gm, '');
+            
+            if (cleanText) {
+                $userInput.val(cleanText);
+                autoResizeTextarea($userInput);
+                $userInput.focus();
+                
+                // Optional: Auto-send jika OCR berhasil
+                // setTimeout(() => sendMessage(), 1000);
+            }
+
+        } catch (error) {
+            hideOCRProgress();
+            console.error('OCR Error:', error);
+            // Don't show alert in OCR High mode, just log the error
+        }
     }
 
     function displayChatHistory() {
@@ -215,8 +455,8 @@ $(document).ready(async function() {
                 
                 // Add copy button for bot messages
                 const messageWithCopyBtn = `
-                    <button class="copy-btn" title="Copy response">📋 Copy</button>
                     ${formattedText}
+                    <button class="copy-btn" title="Copy response">📋</button>
                 `;
                 
                 $messageContent.html(messageWithCopyBtn);
@@ -231,19 +471,50 @@ $(document).ready(async function() {
                 
                 // Add timestamp if available
                 if (msg.timestamp) {
-                    const timestamp = new Date(msg.timestamp).toLocaleTimeString();
+                    const timestamp = new Date(msg.timestamp).toLocaleTimeString('id-ID', { hour12: false });
                     $messageContent.append(`<div class="timestamp">${timestamp}</div>`);
                 }
             } else {
                 $messageDiv.addClass('user-message');
                 
-                // User messages - handle image indicator
-                let displayText = msg.text;
+                // User messages - handle image and text
                 if (msg.hasImage) {
-                    displayText = `📷 ${msg.text}`;
+                    // Try to load image from localStorage
+                    const imageData = loadImageFromLocalStorage(msg.imageId || msg.text);
+                    
+                    if (imageData) {
+                        // Create image element
+                        const $imageElement = $('<img>')
+                            .attr('src', imageData)
+                            .attr('alt', 'Soal Matematika')
+                            .addClass('chat-image')
+                            .on('click', function() {
+                                openImageModal(imageData);
+                            });
+                        
+                        $messageContent.append($imageElement);
+                        
+                        // Add image info
+                        const $imageInfo = $('<div>')
+                            .addClass('image-info')
+                            .html('<small>📷 Gambar soal matematika</small>');
+                        $messageContent.append($imageInfo);
+                        
+                        // Add text if available
+                        if (msg.text && msg.text !== 'Gambar soal matematika') {
+                            const $textDiv = $('<div>').addClass('message-text').text(msg.text);
+                            $messageContent.append($textDiv);
+                        }
+                    } else {
+                        // Fallback if image not found
+                        $messageText.text(`📷 ${msg.text}`);
+                        $messageContent.append($messageText);
+                    }
+                } else {
+                    // Regular text message
+                    $messageText.text(msg.text);
+                    $messageContent.append($messageText);
                 }
-                $messageText.text(displayText);
-                $messageContent.append($messageText);
             }
             
             $messageDiv.append($messageContent);
@@ -363,27 +634,9 @@ $(document).ready(async function() {
         $ocrProgress.hide();
     }
     
-    function showTypingIndicator() {
-        // Remove any existing typing indicator
-        $('.typing-indicator-container').remove();
-        
-        const $typingDiv = $('<div>')
-            .addClass('typing-indicator-container bot')
-            .html(`
-                <div class="typing-indicator">
-                    <span class="typing-dot"></span>
-                    <span class="typing-dot"></span>
-                    <span class="typing-dot"></span>
-                </div>
-            `);
-        
-        $chatBox.append($typingDiv);
-        scrollToBottom();
-    }
-    
-    function hideTypingIndicator() {
-        $('.typing-indicator-container').remove();
-    }
+    // Typing indicator functions removed - streaming handles real-time display
+    // function showTypingIndicator() { ... }
+    // function hideTypingIndicator() { ... }
 
     async function performOCR(imageData) {
         try {
@@ -488,10 +741,10 @@ $(document).ready(async function() {
             return;
         }
         
-        // For UAS Math mode, allow either image or text (not both required)
+        // For OCR High mode, allow either image or text (not both required)
         if (currentMode === 'uas-math') {
             if (!currentImage && !userMessage) {
-                alert('Mode UAS Matematika memerlukan gambar atau pesan teks');
+                alert('Mode OCR High memerlukan gambar atau pesan teks');
                 return;
             }
         } else if (!userMessage) {
@@ -509,7 +762,7 @@ $(document).ready(async function() {
         autoResizeTextarea($userInput);
 
         // Get recent chat history for context
-        // UAS Math mode: TANPA HISTORY - setiap chat independen
+        // OCR High mode: TANPA HISTORY - setiap chat independen
         const recentHistory = (currentMode === 'uas' || currentMode === 'uas-math') ? [] : getRecentHistory();
         
         // Check if streaming is available
@@ -531,25 +784,38 @@ $(document).ready(async function() {
                     streamEndpoint = 'api_stream.php';
             }
             
-            // For UAS Math mode, send image data as well
+            // For OCR High mode, send image data as well
             if (currentMode === 'uas-math') {
-                console.log('🟣 Sending UAS Math mode message');
+                console.log('🟣 Sending OCR High mode message');
                 console.log('📸 Image data:', currentImage ? 'Present (' + currentImage.length + ' chars)' : 'No image');
                 console.log('💬 Message:', userMessage || 'No message');
                 
-                // UAS Math mode: Tanpa history, setiap chat independen
+                // Always show the image in streaming chat, but skip duplicate user message if image was uploaded without text
+                const skipUserMessage = false; // Always show in streaming to display image properly
+                
+                // OCR High mode: Tanpa history, setiap chat independen
                 streamingChat.sendMathMessageWithStreaming(userMessage, [], streamEndpoint, selectedModel, currentImage, (fullResponse) => {
-                    console.log('✅ UAS Math streaming completed');
+                    console.log('✅ OCR High streaming completed');
                     console.log('📝 Full response length:', fullResponse ? fullResponse.length : 'No response');
                     
                     // Add messages to history after streaming completes
                     chatHistory = getCurrentChatHistory();
-                    chatHistory.push({ 
+                    
+                    // Add user message with image info to history
+                    const userMessageForHistory = {
                         sender: 'user', 
                         text: userMessage || 'Gambar soal matematika',
-                        hasImage: !!currentImage 
+                        hasImage: !!currentImage,
+                        imageId: currentImageId,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    chatHistory.push(userMessageForHistory);
+                    chatHistory.push({ 
+                        sender: 'bot', 
+                        text: fullResponse,
+                        timestamp: new Date().toISOString()
                     });
-                    chatHistory.push({ sender: 'bot', text: fullResponse });
                     
                     // Update the appropriate history array
                     chatHistoryUASMath = chatHistory;
@@ -561,7 +827,7 @@ $(document).ready(async function() {
                     
                     // Re-enable send button
                     $sendBtn.prop('disabled', false).removeClass('btn-loading');
-                });
+                }, skipUserMessage);
             } else {
                 streamingChat.sendMessageWithStreaming(userMessage, recentHistory, streamEndpoint, selectedModel, (fullResponse) => {
                     // Add messages to history after streaming completes
@@ -609,8 +875,7 @@ $(document).ready(async function() {
             saveChatHistory();
             displayChatHistory();
 
-            // Show typing indicator
-            showTypingIndicator();
+            // Typing indicator removed - streaming handles real-time display
             
             // Choose API endpoint based on mode
             let apiUrl;
@@ -628,9 +893,8 @@ $(document).ready(async function() {
                     break;
                 case 'uas-math':
                     if (!currentImage) {
-                        alert('Mode UAS Matematika memerlukan gambar');
+                        alert('Mode OCR High memerlukan gambar');
                         $sendBtn.prop('disabled', false).removeClass('btn-loading');
-                        hideTypingIndicator();
                         return;
                     }
                     apiUrl = 'api_uas_math_stream.php';
@@ -659,46 +923,33 @@ $(document).ready(async function() {
                 data: JSON.stringify(requestData),
                 success: function(data) {
                     if (data.reply) {
-                        // Simulasi typing delay yang realistis
-                        const typingDelay = currentMode === 'uas' || currentMode === 'uas-math' ? 
-                            Math.random() * 2000 + 2000 : // 2-4 seconds for UAS modes
-                            Math.random() * 1000 + 1000;  // 1-2 seconds for default
+                        // Add bot reply to current chat history immediately
+                        chatHistory = getCurrentChatHistory();
+                        chatHistory.push({ sender: 'bot', text: data.reply });
                         
-                        setTimeout(() => {
-                            // Hide typing indicator
-                            hideTypingIndicator();
-                            
-                            // Add bot reply to current chat history
-                            chatHistory = getCurrentChatHistory();
-                            chatHistory.push({ sender: 'bot', text: data.reply });
-                            
-                            // Update the appropriate history array
-                            switch(currentMode) {
-                                case 'uas':
-                                    chatHistoryUAS = chatHistory;
-                                    break;
-                                case 'uas-math':
-                                    chatHistoryUASMath = chatHistory;
-                                    // Clear image after successful response
-                                    clearImagePreview();
-                                    break;
-                                default:
-                                    chatHistoryDefault = chatHistory;
-                            }
-                            
-                            saveChatHistory();
-                            displayChatHistory();
-                            
-                            // Re-enable send button
-                            $sendBtn.prop('disabled', false).removeClass('btn-loading');
-                        }, typingDelay);
+                        // Update the appropriate history array
+                        switch(currentMode) {
+                            case 'uas':
+                                chatHistoryUAS = chatHistory;
+                                break;
+                            case 'uas-math':
+                                chatHistoryUASMath = chatHistory;
+                                // Clear image after successful response
+                                clearImagePreview();
+                                break;
+                            default:
+                                chatHistoryDefault = chatHistory;
+                        }
+                        
+                        saveChatHistory();
+                        displayChatHistory();
+                        
+                        // Re-enable send button
+                        $sendBtn.prop('disabled', false).removeClass('btn-loading');
                     }
                 },
                 error: function(xhr, status, error) {
                     console.error('Error sending message:', error);
-                    
-                    // Hide typing indicator
-                    hideTypingIndicator();
                     
                     // Add error message to chat
                     chatHistory = getCurrentChatHistory();
@@ -731,13 +982,13 @@ $(document).ready(async function() {
         let modeText;
         switch(currentMode) {
             case 'uas':
-                modeText = 'Mode UAS';
+                modeText = 'Mode OCR Low';
                 break;
             case 'uas-math':
-                modeText = 'Mode UAS Matematika';
+                modeText = 'Mode OCR High';
                 break;
             default:
-                modeText = 'Mode Default';
+                modeText = 'Mode Chat';
         }
         
         if (confirm(`Apakah Anda yakin ingin menghapus riwayat chat untuk ${modeText}? Tindakan ini tidak dapat dibatalkan.`)) {
@@ -751,6 +1002,8 @@ $(document).ready(async function() {
                     case 'uas-math':
                         chatHistoryUASMath = [];
                         localStorage.removeItem('chatHistoryUASMath');
+                        // Also clear math images for this mode
+                        clearMathImages();
                         break;
                     default:
                         chatHistoryDefault = [];
@@ -772,7 +1025,7 @@ $(document).ready(async function() {
     
     // Function to clear all storage and cache (all modes)
     function clearAllStorageAndCache() {
-        if (confirm('Apakah Anda yakin ingin menghapus SEMUA riwayat chat (Mode Default, UAS, dan UAS Matematika) serta cache? Tindakan ini tidak dapat dibatalkan.')) {
+        if (confirm('Apakah Anda yakin ingin menghapus SEMUA riwayat chat (Mode Chat, OCR Low, dan OCR High) serta cache? Tindakan ini tidak dapat dibatalkan.')) {
             try {
                 // Clear localStorage
                 localStorage.clear();
@@ -810,7 +1063,7 @@ $(document).ready(async function() {
         const confirmMessage = `🧹 CLEAR ALL CACHE & STORAGE
         
 Ini akan menghapus:
-✓ Semua riwayat chat (Mode Default, UAS, UAS Math)
+✓ Semua riwayat chat (Mode Chat, OCR Low, OCR High)
 ✓ Preferensi model dan pengaturan
 ✓ Cache browser dan temporary files
 ✓ Session storage dan cookies (jika ada)
@@ -969,7 +1222,7 @@ Lanjutkan?`;
                 const file = items[i].getAsFile();
                 
                 if (currentMode === 'uas-math') {
-                    // Mode UAS Matematika: Store image for GPT Vision
+                    // Mode OCR High: Store image for GPT Vision
                     const reader = new FileReader();
                     reader.onload = function(event) {
                         currentImage = event.target.result;
@@ -978,7 +1231,7 @@ Lanjutkan?`;
                     };
                     reader.readAsDataURL(file);
                 } else {
-                    // Mode Default dan UAS: Use Tesseract OCR
+                    // Mode Chat dan OCR Low: Use Tesseract OCR
                     const reader = new FileReader();
                     reader.onload = function(event) {
                         performOCR(event.target.result);
@@ -1013,7 +1266,7 @@ Lanjutkan?`;
             const file = files[0];
             
             if (currentMode === 'uas-math') {
-                // Mode UAS Matematika: Store image for GPT Vision
+                // Mode OCR High: Store image for GPT Vision
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     currentImage = event.target.result;
@@ -1022,7 +1275,7 @@ Lanjutkan?`;
                 };
                 reader.readAsDataURL(file);
             } else {
-                // Mode Default dan UAS: Use Tesseract OCR
+                // Mode Chat dan OCR Low: Use Tesseract OCR
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     performOCR(event.target.result);

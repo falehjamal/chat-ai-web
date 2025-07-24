@@ -40,18 +40,23 @@ $defaultModel = ModelConfig::getDefaultModelForMode('default');
 </head>
 <body>
     <div id="mode-selector">
-        <button id="mode-default" class="mode-btn active">Mode Default</button>
-        <button id="mode-uas" class="mode-btn">Mode UAS</button>
-        <button id="mode-uas-math" class="mode-btn">Mode UAS Matematika</button>
+        <button id="mode-default" class="mode-btn active">Mode Chat</button>
+        <button id="mode-uas" class="mode-btn">Mode OCR Low</button>
+        <button id="mode-uas-math" class="mode-btn">Mode OCR High</button>
     </div>
     
-    <div id="model-selector">
-        <label for="gpt-model">Model :</label>
-        <select id="gpt-model" class="model-select">
-            <?= ModelConfig::getHtmlOptions($defaultModel) ?>
-        </select>
-        <button id="clear-cache-btn" title="Hapus semua cache dan localStorage">🗑️ Clear Data</button>
+    <div id="chat-controls">
+        <div id="model-selector">
+            <label for="gpt-model">Model :</label>
+            <select id="gpt-model" class="model-select">
+                <?= ModelConfig::getHtmlOptions($defaultModel) ?>
+            </select>
+        </div>
+        <div id="clear-data-container">
+            <button id="clear-cache-btn" title="Hapus semua cache dan localStorage">🗑️ Clear Data</button>
+        </div>
     </div>
+    
     <div id="chat-container">
         <div id="chat-box"></div>
         <div id="input-container">
@@ -61,7 +66,7 @@ $defaultModel = ModelConfig::getDefaultModelForMode('default');
                 <button id="remove-image">×</button>
             </div>
             <textarea id="user-input" placeholder="Type your message..." rows="1"></textarea>
-            <button id="image-btn" title="Upload gambar untuk Mode UAS Matematika" style="display: none;">📸</button>
+            <button id="image-btn" title="Upload gambar untuk Mode OCR High" style="display: none;">📸</button>
             <button id="clear-btn" title="Klik: Hapus mode saat ini | Klik kanan atau double-click: Hapus semua mode">🗑️</button>
             <button id="send-btn">Send</button>
         </div>

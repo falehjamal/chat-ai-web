@@ -31,15 +31,25 @@ body {
     justify-content: center;
 }
 
-#model-selector {
+#chat-controls {
     width: 90%;
     max-width: 900px;
-    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 0 5px;
+}
+
+#model-selector {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 8px;
+}
+
+#clear-data-container {
+    display: flex;
+    align-items: center;
 }
 
 #model-selector label {
@@ -106,45 +116,7 @@ body {
     display: inline;
 }
 
-/* Typing indicator styles */
-.typing-indicator {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 8px;
-    gap: 4px;
-}
-
-.typing-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #64748b;
-    animation: typingDot 1.4s infinite ease-in-out;
-    opacity: 0.6;
-}
-
-.typing-dot:nth-child(1) {
-    animation-delay: -0.32s;
-}
-
-.typing-dot:nth-child(2) {
-    animation-delay: -0.16s;
-}
-
-.typing-dot:nth-child(3) {
-    animation-delay: 0s;
-}
-
-@keyframes typingDot {
-    0%, 80%, 100% {
-        transform: scale(0.8);
-        opacity: 0.5;
-    }
-    40% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
+/* Typing indicator styles removed - streaming handles real-time display */
 
 /* Streaming message animations */
 @keyframes slideInBot {
@@ -440,8 +412,7 @@ body {
     overflow: hidden;
     border-radius: 16px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    margin: 20px;
-    margin-top: 0;
+    margin: 0 auto;
     position: relative;
 }
 
@@ -727,13 +698,7 @@ body {
     padding: 12px 0;
 }
 
-/* Streaming effects for bot messages */
-.bot.streaming .typing-indicator {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 8px;
-    gap: 4px;
-}
+/* Streaming effects for bot messages - typing indicator removed */
 
 .bot.streaming .streaming-text::after {
     content: '|';
@@ -752,68 +717,7 @@ body {
     white-space: pre-line;
 }
 
-/* Typing indicator seperti ChatGPT */
-.typing-indicator {
-    background: transparent;
-    color: #6b7280;
-    margin: 8px 0;
-    padding: 12px 0;
-    border-radius: 12px;
-    max-width: 80px;
-    margin-right: auto;
-    animation: fadeIn 0.3s ease-out;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.3s ease;
-    box-shadow: none;
-}
-
-.typing-indicator.show {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.typing-dots {
-    display: flex;
-    gap: 3px;
-}
-
-.typing-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: #6b7280;
-    animation: typingAnimation 1.4s infinite;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.typing-dot:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.typing-dot:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
-@keyframes typingAnimation {
-    0%, 60%, 100% {
-        transform: scale(1);
-        opacity: 0.5;
-    }
-    30% {
-        transform: scale(1.2);
-        opacity: 1;
-    }
-}
-
-.typing-text {
-    font-size: 12px;
-    color: #6b7280;
-    margin-left: 4px;
-}
+/* Typing indicator removed - streaming handles real-time display */
 
 #input-container {
     display: flex;
@@ -984,6 +888,29 @@ body {
         justify-content: stretch;
     }
 
+    #chat-controls {
+        width: 100%;
+        padding: 10px 16px;
+        margin-bottom: 0;
+    }
+
+    #model-selector label {
+        font-size: 14px;
+    }
+
+    .model-select {
+        font-size: 14px;
+        padding: 6px 10px;
+        min-width: 150px;
+    }
+
+    #clear-cache-btn {
+        height: 40px;
+        min-width: 80px;
+        font-size: 13px;
+        padding: 6px 10px;
+    }
+
     #chat-container {
         width: 100%;
         height: 100vh;
@@ -1027,9 +954,7 @@ body {
         font-size: 14px;
     }
 
-    .typing-indicator {
-        padding: 10px 0;
-    }
+    /* Typing indicator removed */
 }
 
 /* Media query untuk device sangat kecil */
@@ -1039,6 +964,40 @@ body {
         padding: 0;
         align-items: stretch;
         justify-content: stretch;
+    }
+
+    #chat-controls {
+        width: 100%;
+        padding: 8px 12px;
+        margin-bottom: 0;
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    #model-selector {
+        justify-content: center;
+    }
+
+    #model-selector label {
+        font-size: 13px;
+    }
+
+    .model-select {
+        font-size: 13px;
+        padding: 6px 8px;
+        min-width: 120px;
+    }
+
+    #clear-data-container {
+        justify-content: center;
+    }
+
+    #clear-cache-btn {
+        height: 36px;
+        min-width: 100px;
+        font-size: 12px;
+        padding: 6px 8px;
     }
 
     #chat-container {
@@ -1099,9 +1058,7 @@ body {
         margin: 8px 0;
     }
 
-    .typing-indicator {
-        padding: 8px 0;
-    }
+    /* Typing indicator removed */
 }
 
 /* OCR Progress Bar */
@@ -1407,17 +1364,20 @@ body {
 /* Copy Button Styling */
 .copy-btn {
     position: absolute;
-    top: 8px;
+    bottom: 8px;
     right: 8px;
     background: rgba(0, 0, 0, 0.1);
     border: none;
-    border-radius: 6px;
-    padding: 6px 8px;
+    border-radius: 4px;
+    padding: 4px 6px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 10px;
     color: #6b7280;
     transition: all 0.2s ease;
     opacity: 0;
+    display: flex;
+    align-items: center;
+    gap: 2px;
 }
 
 .bot-message:hover .copy-btn {
@@ -1492,6 +1452,54 @@ body {
     position: relative;
 }
 
+/* Chat image styling */
+.chat-image {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    margin: 10px 0;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.image-info {
+    margin-top: 8px;
+}
+
+.image-info small {
+    color: #666;
+    font-style: italic;
+    font-size: 12px;
+}
+
+/* Image modal styling */
+#image-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    cursor: pointer;
+}
+
+#image-modal img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
 /* Responsive model selector */
 @media (max-width: 768px) {
     #model-selector {
@@ -1509,5 +1517,9 @@ body {
     .model-select {
         min-width: auto;
         width: 100%;
+    }
+    
+    .chat-image {
+        max-height: 250px;
     }
 }

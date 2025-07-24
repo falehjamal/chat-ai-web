@@ -9,11 +9,12 @@ class StreamingChat {
     }
 
     // Send message with streaming response for math mode with optional image
-    sendMathMessageWithStreaming(message, chatHistory, endpoint = 'api_uas_math_stream.php', model = 'gpt-4o', imageBase64 = null, onComplete = null) {
+    sendMathMessageWithStreaming(message, chatHistory, endpoint = 'api_uas_math_stream.php', model = 'gpt-4o', imageBase64 = null, onComplete = null, skipUserMessage = false) {
         console.log('🚀 Starting sendMathMessageWithStreaming');
         console.log('📸 Image:', imageBase64 ? 'Present (' + imageBase64.length + ' chars)' : 'No image (text only)');
         console.log('🎯 Endpoint:', endpoint);
         console.log('🤖 Model:', model);
+        console.log('⏭️ Skip user message:', skipUserMessage);
         
         if (this.isStreaming) {
             console.warn('Already streaming, please wait...');
@@ -23,28 +24,32 @@ class StreamingChat {
         this.isStreaming = true;
         this.streamingText = '';
 
-        // Add user message to chat immediately (with or without image indicator)
-        const displayMessage = message || (imageBase64 ? 'Gambar soal matematika' : 'Pertanyaan matematika');
-        this.addUserMessage(displayMessage, !!imageBase64);
+        // Add user message to chat only if not skipped (untuk gambar sudah ditambahkan sebelumnya)
+        if (!skipUserMessage) {
+            const displayMessage = message || (imageBase64 ? 'Gambar soal matematika' : 'Pertanyaan matematika');
+            this.addUserMessage(displayMessage, !!imageBase64, imageBase64);
+        } else if (message) {
+            // Jika ada text message tambahan setelah gambar, tambahkan sebagai pesan terpisah
+            this.addUserMessage(message, false, null);
+        }
 
-        // Create bot message placeholder with typing indicator
+        // Create bot message placeholder for streaming
         this.currentBotMessageElement = this.createBotMessagePlaceholder();
         
-        // Show typing indicator
-        this.showTypingIndicator();
+        // Start streaming directly without typing indicator
 
         // Prepare data for streaming with image
-        // Note: Even though UAS Math doesn't use chat history for API, we still track it locally
+        // Note: Even though OCR High doesn't use chat history for API, we still track it locally
         const streamData = {
             message: message,
-            history: [], // UAS Math API doesn't use history, but we still save locally
+            history: [], // OCR High API doesn't use history, but we still save locally
             model: model,
             image: imageBase64
         };
 
         console.log('📤 Sending stream data:', JSON.stringify({
             message: message,
-            historyLength: 0, // Always 0 for UAS Math API
+            historyLength: 0, // Always 0 for OCR High API
             model: model,
             imageLength: imageBase64 ? imageBase64.length : 0
         }));
@@ -66,11 +71,10 @@ class StreamingChat {
         // Add user message to chat immediately
         this.addUserMessage(message);
 
-        // Create bot message placeholder with typing indicator
+        // Create bot message placeholder for streaming
         this.currentBotMessageElement = this.createBotMessagePlaceholder();
         
-        // Show typing indicator
-        this.showTypingIndicator();
+        // Start streaming directly without typing indicator
 
         // Prepare data for streaming
         const streamData = {
@@ -164,9 +168,9 @@ class StreamingChat {
         switch (eventType) {
             case 'status':
                 if (data.type === 'typing_start') {
-                    this.showTypingIndicator();
+                    // Typing indicator removed - direct streaming instead
                 } else if (data.type === 'typing_end') {
-                    this.hideTypingIndicator();
+                    // Typing indicator removed - direct streaming instead
                     this.streamingText = data.full_text || this.streamingText;
                     this.finalizeMessage();
                 } else if (data.status) {
@@ -179,7 +183,6 @@ class StreamingChat {
                 // Handle streaming content from math API
                 console.log('🌊 Stream content received:', data.content ? data.content.length + ' chars' : 'no content');
                 if (data.content) {
-                    this.hideTypingIndicator();
                     this.appendToStreamingMessage(data.content);
                     this.streamingText += data.content;
                 }
@@ -188,7 +191,6 @@ class StreamingChat {
             case 'chunk':
                 console.log('📦 Chunk received:', data.content ? data.content.length + ' chars' : 'no content');
                 if (data.content) {
-                    this.hideTypingIndicator();
                     this.appendToStreamingMessage(data.content);
                     this.streamingText = data.full_text || this.streamingText;
                 }
@@ -196,7 +198,6 @@ class StreamingChat {
 
             case 'complete':
                 console.log('✅ Stream completed');
-                this.hideTypingIndicator();
                 this.finalizeMessage();
                 break;
 
@@ -210,7 +211,6 @@ class StreamingChat {
                 console.log('🔄 Default handler for event:', eventType);
                 if (data.content) {
                     console.log('📝 Content in default handler:', data.content.length + ' chars');
-                    this.hideTypingIndicator();
                     this.appendToStreamingMessage(data.content);
                     this.streamingText += data.content;
                 } else {
@@ -220,22 +220,87 @@ class StreamingChat {
     }
 
     // Add user message to chat
-    addUserMessage(message, hasImage = false) {
+    addUserMessage(message, hasImage = false, imageBase64 = null) {
         const $chatBox = $('#chat-box');
-        let displayMessage = message;
-        
-        if (hasImage) {
-            displayMessage = message ? `📷 ${message}` : '📷 Gambar soal matematika';
-        }
-        
         const $messageDiv = $('<div>').addClass('message user-message');
         const $messageContent = $('<div>').addClass('message-content');
-        const $messageText = $('<div>').addClass('message-text').text(displayMessage);
         
-        $messageContent.append($messageText);
+        // If there's an image, display it
+        if (hasImage && imageBase64) {
+            const $imageElement = $('<img>')
+                .attr('src', imageBase64)
+                .attr('alt', 'Soal Matematika')
+                .addClass('chat-image')
+                .css({
+                    'max-width': '100%',
+                    'max-height': '300px',
+                    'border-radius': '8px',
+                    'margin': '10px 0',
+                    'cursor': 'pointer'
+                });
+            
+            // Add click to enlarge functionality
+            $imageElement.on('click', function() {
+                this.openImageModal(imageBase64);
+            }.bind(this));
+            
+            $messageContent.append($imageElement);
+            
+            // Add image info if there's also a text message
+            if (message) {
+                const $messageText = $('<div>').addClass('message-text').text(message);
+                $messageContent.append($messageText);
+            } else {
+                const $imageInfo = $('<div>')
+                    .addClass('image-info')
+                    .html('<small style="color: #666; font-style: italic;">📷 Gambar soal matematika</small>');
+                $messageContent.append($imageInfo);
+            }
+        } else {
+            // Regular text message
+            let displayMessage = message;
+            if (hasImage) {
+                displayMessage = message ? `📷 ${message}` : '📷 Gambar soal matematika';
+            }
+            const $messageText = $('<div>').addClass('message-text').text(displayMessage);
+            $messageContent.append($messageText);
+        }
+        
         $messageDiv.append($messageContent);
         $chatBox.append($messageDiv);
         this.scrollToBottom();
+    }
+
+    // Open image in modal for better viewing
+    openImageModal(imageData) {
+        // Create modal if it doesn't exist
+        let $modal = $('#image-modal');
+        if ($modal.length === 0) {
+            $modal = $('<div>')
+                .attr('id', 'image-modal')
+                .css({
+                    'position': 'fixed',
+                    'top': '0',
+                    'left': '0',
+                    'width': '100%',
+                    'height': '100%',
+                    'background': 'rgba(0,0,0,0.8)',
+                    'display': 'flex',
+                    'justify-content': 'center',
+                    'align-items': 'center',
+                    'z-index': '9999',
+                    'cursor': 'pointer'
+                })
+                .html('<img style="max-width: 90%; max-height: 90%; border-radius: 8px;">')
+                .on('click', function() {
+                    $(this).hide();
+                });
+            
+            $('body').append($modal);
+        }
+        
+        $modal.find('img').attr('src', imageData);
+        $modal.show();
     }
 
     // Create bot message placeholder
@@ -246,11 +311,6 @@ class StreamingChat {
         
         const messageHtml = `
             <span class="streaming-text"></span>
-            <span class="typing-indicator">
-                <span class="typing-dot"></span>
-                <span class="typing-dot"></span>
-                <span class="typing-dot"></span>
-            </span>
         `;
         
         $messageContent.html(messageHtml);
@@ -260,18 +320,14 @@ class StreamingChat {
         return $('#streaming-message');
     }
 
-    // Show typing indicator
+    // Typing indicator functions removed - direct streaming text display
     showTypingIndicator() {
-        if (this.currentBotMessageElement) {
-            this.currentBotMessageElement.find('.typing-indicator').show();
-        }
+        // No longer needed - streaming shows text directly
     }
 
     // Hide typing indicator
     hideTypingIndicator() {
-        if (this.currentBotMessageElement) {
-            this.currentBotMessageElement.find('.typing-indicator').hide();
-        }
+        // No longer needed - streaming shows text directly
     }
 
     // Append text to streaming message with typing effect
@@ -293,7 +349,6 @@ class StreamingChat {
         if (this.currentBotMessageElement) {
             this.currentBotMessageElement.removeClass('streaming');
             this.currentBotMessageElement.removeAttr('id');
-            this.hideTypingIndicator();
             
             // Replace streaming content with final formatted content using markdown renderer
             const finalText = this.streamingText;
@@ -306,8 +361,8 @@ class StreamingChat {
             
             // Replace content with copy button and formatted text
             $messageContent.html(`
-                <button class="copy-btn" title="Copy response">📋 Copy</button>
                 ${formattedHtml}
+                <button class="copy-btn" title="Copy response">📋</button>
             `);
             
             // Render math expressions
@@ -323,8 +378,8 @@ class StreamingChat {
     // Add copy button to message
     addCopyButton(htmlContent) {
         return `
-            <button class="copy-btn" title="Copy response">📋 Copy</button>
             ${htmlContent}
+            <button class="copy-btn" title="Copy response">📋</button>
         `;
     }
     
@@ -437,7 +492,6 @@ class StreamingChat {
             this.currentBotMessageElement.html(
                 `<span class="error-message">❌ Error: ${this.escapeHtml(errorMessage)}</span>`
             );
-            this.hideTypingIndicator();
             this.finalizeMessage();
         }
     }

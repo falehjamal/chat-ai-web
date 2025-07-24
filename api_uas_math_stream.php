@@ -52,7 +52,7 @@ $userMessage = $data['message'] ?? '';
 $selectedModel = $data['model'] ?? ModelConfig::getDefaultModelForMode('uas-math');
 $imageBase64 = $data['image'] ?? '';
 
-// Mode UAS Matematika bisa dengan atau tanpa gambar
+// Mode OCR High bisa dengan atau tanpa gambar
 // Tidak ada validasi wajib gambar
 
 // Validate API key
@@ -65,15 +65,13 @@ if (!$apiKey) {
 // Siapkan pesan untuk OpenAI API dengan Vision
 $messages = [];
 
-// Sistem prompt untuk menyelesaikan soal matematika
-$systemMessage = "Anda adalah asisten AI yang ahli dalam matematika dan pemecahan soal. Tugas Anda meliputi:
-1. Jika terdapat gambar: Analisis gambar yang berisi soal matematika.
-2. Jika hanya teks: Jawab pertanyaan secara langsung.
-3. Identifikasi jenis soal (misalnya aljabar, kalkulus, geometri, dll.).
-4. Berikan jawaban akhir yang akurat.
-5. Gunakan format yang mudah dipahami, dengan penjelasan yang jelas dan terstruktur.
-
-Fokuskan pada pemahaman konsep dan langkah-langkah logis dalam penyelesaian soal.";
+// Sistem prompt untuk menyelesaikan soal
+$systemMessage = "Anda adalah asisten AI yang dapat membantu menyelesaikan soal dari berbagai mata pelajaran, dengan keahlian utama dalam matematika dan pemecahan soal. Tugas Anda meliputi:
+1. Jika terdapat gambar: Analisis isi gambar untuk mengidentifikasi dan memahami soal yang diberikan.
+2. Jika hanya teks: Jawab pertanyaan secara langsung sesuai konteks mata pelajaran.
+3. Identifikasi jenis soal — terutama untuk matematika (misalnya aljabar, kalkulus, geometri, dll.), namun juga relevan untuk bidang lain seperti fisika, kimia, atau bahasa.
+4. Berikan jawaban akhir yang akurat dan dapat dipertanggungjawabkan.
+5. Jelaskan secara singkat, lalu langsung berikan jawaban akhir secara to the point.";
 
 // Tambahkan pesan sistem ke array
 $messages[] = [
@@ -141,7 +139,7 @@ curl_setopt_array($ch, [
     ],
     CURLOPT_WRITEFUNCTION => function($ch, $data) use (&$fullResponse, $userMessage, $selectedModel) {
         // Add debug logging
-        error_log("UAS Math API: Received data chunk: " . strlen($data) . " bytes");
+        error_log("OCR High API: Received data chunk: " . strlen($data) . " bytes");
         
         // Process streaming data
         $lines = explode("\n", $data);
@@ -165,7 +163,7 @@ curl_setopt_array($ch, [
                     $tokenCount = ModelConfig::estimateConversationTokens($userMessage, $fullResponse);
                     $database->saveChatHistory($userMessage, $fullResponse, $ipAddress, 'uas-math', $tokenCount, $selectedModel);
                 } catch (Exception $e) {
-                    error_log("Gagal menyimpan chat history UAS Math: " . $e->getMessage());
+                    error_log("Gagal menyimpan chat history OCR High: " . $e->getMessage());
                 }
                 continue;
             }
@@ -177,10 +175,10 @@ curl_setopt_array($ch, [
                 if (json_last_error() === JSON_ERROR_NONE && isset($decoded['choices'][0]['delta']['content'])) {
                     $content = $decoded['choices'][0]['delta']['content'];
                     $fullResponse .= $content; // Collect full response
-                    error_log("UAS Math API: Sending content: " . substr($content, 0, 50) . "...");
+                    error_log("OCR High API: Sending content: " . substr($content, 0, 50) . "...");
                     sendSSE(['content' => $content], 'stream');
                 } else {
-                    error_log("UAS Math API: Could not parse JSON or no content: " . $jsonData);
+                    error_log("OCR High API: Could not parse JSON or no content: " . $jsonData);
                 }
             }
         }
@@ -195,28 +193,28 @@ curl_setopt_array($ch, [
 sendSSE(['status' => 'Menganalisis gambar dan memproses soal matematika...'], 'status');
 
 // Add debug logging
-error_log("UAS Math API: Starting request to OpenAI");
-error_log("UAS Math API: Model = " . $selectedModel);
-error_log("UAS Math API: Image length = " . strlen($imageBase64));
+error_log("OCR High API: Starting request to OpenAI");
+error_log("OCR High API: Model = " . $selectedModel);
+error_log("OCR High API: Image length = " . strlen($imageBase64));
 
 $result = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $error = curl_error($ch);
 
 // Add debug logging
-error_log("UAS Math API: HTTP Code = " . $httpCode);
-error_log("UAS Math API: cURL Error = " . $error);
+error_log("OCR High API: HTTP Code = " . $httpCode);
+error_log("OCR High API: cURL Error = " . $error);
 
 curl_close($ch);
 
 if ($result === false) {
-    error_log("UAS Math API: cURL failed - " . $error);
+    error_log("OCR High API: cURL failed - " . $error);
     sendSSE(['error' => 'cURL error: ' . $error], 'error');
 } elseif ($httpCode !== 200) {
-    error_log("UAS Math API: HTTP Error - " . $httpCode);
+    error_log("OCR High API: HTTP Error - " . $httpCode);
     sendSSE(['error' => 'HTTP error: ' . $httpCode], 'error');
 } else {
-    error_log("UAS Math API: Request completed successfully");
+    error_log("OCR High API: Request completed successfully");
     sendSSE(['status' => 'completed'], 'complete');
 }
 ?>

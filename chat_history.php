@@ -11,6 +11,16 @@ date_default_timezone_set('Asia/Jakarta');
 require_once 'database.php';
 require_once 'env_helper.php';
 
+// Function to get display name for mode
+function getModeDisplayName($mode) {
+    switch($mode) {
+        case 'default': return 'Chat';
+        case 'uas': return 'OCR Low';
+        case 'uas-math': return 'OCR High';
+        default: return ucfirst($mode);
+    }
+}
+
 // Initialize database
 try {
     loadEnv();
@@ -434,9 +444,9 @@ $stats = getChatStatistics($database, $startDate, $endDate);
                     <label for="mode">Mode:</label>
                     <select id="mode" name="mode">
                         <option value="">All Modes</option>
-                        <option value="default" <?= $modeFilter === 'default' ? 'selected' : '' ?>>Default</option>
-                        <option value="uas" <?= $modeFilter === 'uas' ? 'selected' : '' ?>>UAS</option>
-                        <option value="uas-math" <?= $modeFilter === 'uas-math' ? 'selected' : '' ?>>UAS Math</option>
+                        <option value="default" <?= $modeFilter === 'default' ? 'selected' : '' ?>>Chat</option>
+                        <option value="uas" <?= $modeFilter === 'uas' ? 'selected' : '' ?>>OCR Low</option>
+                        <option value="uas-math" <?= $modeFilter === 'uas-math' ? 'selected' : '' ?>>OCR High</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -493,7 +503,7 @@ $stats = getChatStatistics($database, $startDate, $endDate);
                     </td>
                     <td class="token-count"><?= number_format($chat['jumlah_token']) ?></td>
                     <td><span class="model-badge"><?= htmlspecialchars($chat['model']) ?></span></td>
-                    <td><span class="mode-badge mode-<?= $chat['mode'] ?>"><?= ucfirst($chat['mode']) ?></span></td>
+                    <td><span class="mode-badge mode-<?= $chat['mode'] ?>"><?= getModeDisplayName($chat['mode']) ?></span></td>
                     <td class="timestamp"><?= date('Y-m-d H:i:s', strtotime($chat['created_at'])) ?></td>
                 </tr>
                 <?php endforeach; ?>

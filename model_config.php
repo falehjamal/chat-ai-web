@@ -23,18 +23,7 @@ class ModelConfig {
      * ]
      */
     private static $models = [
-        'gpt-3.5-turbo' => [
-            'name' => 'GPT-3.5 Turbo',
-            'description' => 'Cepat & Ekonomis (Cocok untuk obrolan ringan)',
-            'api_model' => 'gpt-3.5-turbo-0125',
-            'max_tokens' => 500,
-            'temperature' => 0.8,
-            'enabled' => false, // Nonaktif sampai diperlukan
-            'recommended_for' => ['default'],
-            'pricing_tier' => 'low',
-            'price_per_1m_tokens' => '$0.50'
-        ],
-            'gpt-4.1-nano' => [
+        'gpt-4.1-nano' => [
             'name' => 'GPT-4.1 nano',
             'description' => 'Versi Mini (Murah dan Ringan)',
             'api_model' => 'gpt-4.1-nano-2025-04-14',
@@ -45,7 +34,7 @@ class ModelConfig {
             'pricing_tier' => 'low',
             'price_per_1m_tokens' => '$0.25'
         ],
-            'gpt-4.1' => [
+        'gpt-4.1' => [
             'name' => 'GPT-4.1',
             'description' => 'Akurasi Tinggi (Terbaik untuk matematika dan logika kompleks)',
             'api_model' => 'gpt-4.1-2025-04-14',
@@ -58,7 +47,7 @@ class ModelConfig {
         ],
         'gpt-4o' => [
             'name' => 'GPT-4o',
-            'description' => 'Pintar & Fleksibel (Ideal untuk tugas, UAS, OCR, dan esai)',
+            'description' => 'Pintar & Fleksibel (Ideal untuk tugas, Chat, OCR, dan esai)',
             'api_model' => 'gpt-4o', // Gunakan default terbaru
             'max_tokens' => 1000,
             'temperature' => 0.3,

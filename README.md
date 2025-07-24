@@ -4,11 +4,11 @@ Aplikasi web chat AI modern dengan OpenAI GPT API, sistem chat history lengkap, 
 
 ## ✨ Fitur Utama
 
-- 💬 **Multi-Mode Chat**: Mode Default, UAS, dan UAS Matematika
+- 💬 **Multi-Mode Chat**: Mode Chat, OCR Low, dan OCR High
 - 🧠 **AI Powered**: OpenAI GPT (GPT-3.5, GPT-4o, GPT-4.1) untuk respons cerdas
 - 📷 **OCR + Vision**: Upload gambar soal matematika untuk analisis GPT Vision
 - 📊 **Chat History**: Sistem perekaman dan history chat lengkap dengan database
-- 🎯 **Mode UAS Matematika**: Khusus untuk menyelesaikan soal matematika dari gambar
+- 🎯 **Mode OCR High**: Khusus untuk menyelesaikan soal matematika dari gambar
 - 📱 **Responsive**: Interface mobile-friendly dengan desain modern
 - 💾 **Database Recording**: Semua chat direkam dengan detail (IP, token, model, dll.)
 - 🎨 **Modern UI**: Desain clean dengan animasi smooth
@@ -86,9 +86,9 @@ chat-ai-web/
 ├── .htaccess                    # 🔒 Security rules
 ├── 
 ├── # API Endpoints
-├── api_stream.php               # 🔄 API Mode Default
-├── api_uas_stream.php           # 🎓 API Mode UAS  
-├── api_uas_math_stream.php      # 📐 API Mode UAS Matematika
+├── api_stream.php               # 🔄 API Mode Chat
+├── api_uas_stream.php           # 🎓 API Mode OCR Low  
+├── api_uas_math_stream.php      # 📐 API Mode OCR High
 ├── 
 ├── # Frontend Assets
 ├── css/
@@ -107,21 +107,21 @@ chat-ai-web/
 
 ## 🎯 Cara Penggunaan
 
-### 💬 Mode Default
-1. **Pilih Mode**: "Mode Default" di dropdown
+### 💬 Mode Chat
+1. **Pilih Mode**: "Mode Chat" di dropdown
 2. **Pilih Model**: GPT-3.5, GPT-4o, atau GPT-4.1
 3. **Chat**: Ketik pesan dan tekan Enter
 4. **Context**: Riwayat chat tersimpan dengan konteks
 5. **Streaming**: Response real-time dari AI
 
-### 🎓 Mode UAS  
-1. **Pilih Mode**: "Mode UAS"
-2. **Fokus Soal**: Dioptimalkan untuk menjawab soal UAS
+### 🎓 Mode OCR Low  
+1. **Pilih Mode**: "Mode OCR Low"
+2. **Fokus Soal**: Dioptimalkan untuk menjawab soal dengan OCR dasar
 3. **No Context**: Setiap soal ditangani independen
 4. **Academic**: Response yang lebih formal dan akademis
 
-### 📐 Mode UAS Matematika
-1. **Pilih Mode**: "Mode UAS Matematika"
+### 📐 Mode OCR High
+1. **Pilih Mode**: "Mode OCR High"
 2. **Upload Gambar**: Klik tombol kamera 📷
 3. **Preview**: Lihat thumbnail gambar yang diupload
 4. **Kirim**: Gambar + teks tambahan (opsional)
@@ -237,7 +237,7 @@ chmod 755 tmp/
 }
 ```
 
-#### POST `/api_uas_math_stream.php`
+#### POST `/api_uas_math_stream.php` (Mode OCR High)
 ```json
 {
     "message": "Analisis gambar ini",

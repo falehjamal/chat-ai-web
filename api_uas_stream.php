@@ -55,7 +55,7 @@ if (empty($rawInput)) {
         exit;
     }
     $userMessage = $data['message'] ?? '';
-    $selectedModel = $data['model'] ?? ModelConfig::getDefaultModelForMode('uas'); // Default for UAS mode
+    $selectedModel = $data['model'] ?? ModelConfig::getDefaultModelForMode('uas'); // Default for OCR Low mode
 }
 
 if (empty($userMessage)) {
@@ -63,8 +63,8 @@ if (empty($userMessage)) {
     exit;
 }
 
-// Create system prompt for UAS mode - no history context needed
-$systemPrompt = "Anda adalah asisten AI yang membantu mahasiswa menjawab soal UAS. Berikan jawaban singkat, dan relevan. Sebelum menjawab, pikirkan dulu kemungkinan jawaban secara runtut, lalu simpulkan jawaban akhir secara singkat dan jelas.";
+// Create system prompt for OCR Low mode - no history context needed
+$systemPrompt = "Anda adalah asisten AI yang membantu mahasiswa menjawab soal. Berikan jawaban singkat, dan relevan. Sebelum menjawab, pikirkan dulu kemungkinan jawaban secara runtut, lalu simpulkan jawaban akhir secara singkat padat dan jelas.";
 
 
 // Get API key from environment
@@ -104,7 +104,7 @@ curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     'Authorization: Bearer ' . $apiKey,
     'Content-Type: application/json',
-    'User-Agent: ChatAI-Web-UAS/1.0'
+    'User-Agent: ChatAI-Web-OCRLow/1.0'
 ]);
 
 // Set up streaming callback
@@ -127,7 +127,7 @@ curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $chunk) use (&$fullRespons
                 // Send completion status
                 sendSSE(['type' => 'typing_end', 'full_text' => $fullResponse], 'status');
                 
-                // Save to database with UAS mode indicator
+                // Save to database with OCR Low mode indicator
                 try {
                     require_once 'model_config.php';
                     $ipAddress = Database::getRealIpAddress();
@@ -137,7 +137,7 @@ curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $chunk) use (&$fullRespons
                     
                     $database->saveChatHistory($userMessage, $fullResponse, $ipAddress, 'uas', $tokenCount, $selectedModel);
                 } catch (Exception $e) {
-                    error_log("Gagal menyimpan chat history UAS: " . $e->getMessage());
+                    error_log("Gagal menyimpan chat history OCR Low: " . $e->getMessage());
                 }
                 
                 sendSSE([
