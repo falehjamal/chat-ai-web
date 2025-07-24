@@ -47,7 +47,7 @@ $defaultModel = ModelConfig::getDefaultModelForMode('default');
     
     <div id="chat-controls">
         <div id="model-selector">
-            <label for="gpt-model">Model :</label>
+            <!-- <label for="gpt-model">Model :</label> -->
             <select id="gpt-model" class="model-select">
                 <?= ModelConfig::getHtmlOptions($defaultModel) ?>
             </select>

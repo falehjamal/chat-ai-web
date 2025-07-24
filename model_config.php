@@ -190,10 +190,11 @@ class ModelConfig {
         foreach ($activeModels as $key => $model) {
             $selected = ($key === $selectedModel) ? 'selected' : '';
             $options .= sprintf(
-                '<option value="%s" %s>%s — %s per 1jt token</option>',
+                '<option value="%s" %s>%s - %s %s</option>',
                 htmlspecialchars($key),
                 $selected,
                 htmlspecialchars($model['name']),
+                htmlspecialchars($model['description']),
                 htmlspecialchars($model['price_per_1m_tokens'])
             );
         }

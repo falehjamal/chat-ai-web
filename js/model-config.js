@@ -188,15 +188,10 @@ class ModelConfigManager {
             
             if (recommended.includes(modelKey)) {
                 $option.addClass('recommended-model');
-                // Tambahkan indikator visual untuk model yang direkomendasikan
-                const currentText = $option.text();
-                if (!currentText.includes('⭐')) {
-                    $option.text('⭐ ' + currentText);
-                }
+                $option.attr('data-recommended', 'true');
             } else {
                 $option.removeClass('recommended-model');
-                const currentText = $option.text();
-                $option.text(currentText.replace('⭐ ', ''));
+                $option.removeAttr('data-recommended');
             }
         });
     }

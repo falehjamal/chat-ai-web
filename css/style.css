@@ -69,9 +69,9 @@ body {
     color: #374151;
     cursor: pointer;
     transition: all 0.3s ease;
-    min-width: 200px;
+    min-width: 300px;
     flex: 1;
-    max-width: 400px;
+    max-width: 600px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -901,7 +901,8 @@ body {
     .model-select {
         font-size: 14px;
         padding: 6px 10px;
-        min-width: 150px;
+        min-width: 200px;
+        max-width: 350px;
     }
 
     #clear-cache-btn {
@@ -986,7 +987,8 @@ body {
     .model-select {
         font-size: 13px;
         padding: 6px 8px;
-        min-width: 120px;
+        min-width: 200px;
+        max-width: 300px;
     }
 
     #clear-data-container {
@@ -1412,6 +1414,11 @@ body {
 
 .model-select option.recommended-model:hover {
     background-color: #fde68a;
+}
+
+/* Visual indicator for recommended models */
+.model-select option[data-recommended="true"]::before {
+    content: "⭐ ";
 }
 
 /* Model recommendation indicator */
