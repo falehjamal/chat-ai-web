@@ -33,6 +33,6 @@ function loadEnv($filePath = 'config.env') {
 }
 
 function getEnvironmentVar($key, $default = null) {
-    return $_ENV[$key] ?? getenv($key) ?: $default;
+    return $_ENV[$key] ?? (getenv($key) ?: $default);
 }
-?> 
+?>

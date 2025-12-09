@@ -87,17 +87,31 @@ body {
 
 .mode-btn {
     background: #ffffff;
-    border: 2px solid #e2e8f0;
+    border: 1.5px solid #e2e8f0;
     border-radius: 12px;
-    padding: 12px 24px;
+    padding: 10px 20px;
     font-family: 'Inter', sans-serif;
-    font-size: 15px; /* Perbesar dari 14px ke 15px */
+    font-size: 14px;
     font-weight: 500;
     color: #64748b;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    min-width: 120px;
+    transition: all 0.25s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    min-width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.mode-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+}
+
+.mode-btn span {
+    display: inline-block;
 }
 
 .mode-btn:hover {
@@ -778,84 +792,193 @@ body {
 }
 
 #clear-btn {
-    background: #f8f8f8;
-    color: #6b7280;
-    border: 1px solid #e2e8f0;
-    padding: 8px;
-    border-radius: 22px;
+    background: #f8fafc;
+    color: #64748b;
+    border: 1.5px solid #e2e8f0;
+    padding: 0;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
-    height: 48px;
-    width: 48px;
+    height: 44px;
+    width: 44px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+}
+
+#clear-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
 }
 
 #clear-btn:hover {
-    background: #fee2e2;
-    border-color: #fca5a5;
-    color: #dc2626;
-    transform: scale(1.05);
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #ef4444;
 }
 
 #clear-btn:active {
     transform: scale(0.95);
 }
 
-#clear-cache-btn {
-    background: #fff;
-    color: #374151;
-    border: 1px solid #e2e8f0;
-    padding: 8px 16px;
-    border-radius: 22px;
-    font-weight: 500;
+/* Icon Button Base Styles */
+.icon-btn {
+    background: #f8fafc;
+    color: #64748b;
+    border: 1.5px solid #e2e8f0;
+    padding: 0;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
-    height: 48px;
-    min-width: 90px;
+    height: 44px;
+    width: 44px;
     flex-shrink: 0;
-    font-size: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    white-space: nowrap;
-    box-shadow: none;
 }
-#clear-cache-btn:hover, #clear-cache-btn:active {
-    background: #fff;
-    color: #1e293b;
+
+.icon-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+}
+
+.icon-btn:hover {
+    background: #f1f5f9;
     border-color: #cbd5e1;
-    box-shadow: 0 2px 8px rgba(59,130,246,0.04);
-    transform: none;
+    color: #475569;
+}
+
+.icon-btn:active {
+    transform: scale(0.95);
+}
+
+/* Small Icon Button */
+.icon-btn-small {
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    border: none;
+    padding: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    height: 24px;
+    width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+}
+
+.icon-btn-small svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2.5;
+}
+
+.icon-btn-small:hover {
+    background: rgba(239, 68, 68, 0.9);
+}
+
+#clear-cache-btn {
+    background: #f8fafc;
+    color: #64748b;
+    border: 1.5px solid #e2e8f0;
+    padding: 0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    height: 44px;
+    width: 44px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#clear-cache-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+}
+
+#clear-cache-btn:hover {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #ef4444;
 }
 
 #send-btn {
-    background: #4a90e2;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: #ffffff;
-    border: 1px solid #4a90e2;
-    padding: 12px 20px;
-    border-radius: 22px;
-    font-weight: 500;
+    border: none;
+    padding: 0;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
-    height: 48px;
-    min-width: 70px;
+    height: 44px;
+    width: 44px;
     flex-shrink: 0;
-    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+#send-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
 }
 
 #send-btn:hover {
-    background: #357abd;
-    border-color: #357abd;
-    transform: scale(1.05);
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    transform: translateY(-1px);
 }
 
 #send-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.95) translateY(0);
+}
+
+#send-btn:disabled {
+    background: #94a3b8;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+/* Image Upload Button */
+#image-btn {
+    background: #f8fafc;
+    color: #64748b;
+    border: 1.5px solid #e2e8f0;
+    padding: 0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    height: 44px;
+    width: 44px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#image-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+}
+
+#image-btn:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #3b82f6;
 }
 
 /* Media query untuk desktop besar */

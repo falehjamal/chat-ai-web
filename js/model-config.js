@@ -28,31 +28,41 @@ class ModelConfigManager {
             // Fallback ke konfigurasi default
             this.config = {
                 models: {
-                    'gpt-3.5-turbo': {
-                        name: 'GPT-3.5 Turbo',
-                        description: 'Cepat & Ekonomis',
-                        recommended_for: ['default'],
-                        pricing_tier: 'low'
+                    'gpt-5.1': {
+                        name: 'GPT-5.1',
+                        description: 'Model Terbaru & Terbaik',
+                        recommended_for: ['default', 'uas', 'uas-math', 'ocr'],
+                        pricing_tier: 'high',
+                        price_per_1m_tokens: '$15.00'
+                    },
+                    'gpt-4.1-nano': {
+                        name: 'GPT-4.1 nano',
+                        description: 'Murah dan Ringan',
+                        recommended_for: [],
+                        pricing_tier: 'low',
+                        price_per_1m_tokens: '$0.25'
                     },
                     'gpt-4o': {
                         name: 'GPT-4o', 
                         description: 'Pintar & Fleksibel',
-                        recommended_for: ['default', 'uas', 'uas-math'],
-                        pricing_tier: 'medium'
+                        recommended_for: [],
+                        pricing_tier: 'high',
+                        price_per_1m_tokens: '$12.50'
                     },
                     'gpt-4.1': {
                         name: 'GPT-4.1',
                         description: 'Akurasi Tinggi',
-                        recommended_for: ['uas-math'],
-                        pricing_tier: 'high'
+                        recommended_for: [],
+                        pricing_tier: 'medium',
+                        price_per_1m_tokens: '$5.00'
                     }
                 },
                 defaults: {
-                    default: 'gpt-3.5-turbo',
-                    uas: 'gpt-4o',
-                    'uas-math': 'gpt-4.1'
+                    default: 'gpt-5.1',
+                    uas: 'gpt-5.1',
+                    'uas-math': 'gpt-5.1'
                 },
-                active_models: ['gpt-3.5-turbo', 'gpt-4o', 'gpt-4.1']
+                active_models: ['gpt-5.1', 'gpt-4.1-nano', 'gpt-4.1', 'gpt-4o']
             };
             this.initialized = true;
         }
@@ -73,8 +83,7 @@ class ModelConfigManager {
     getDefaultModelForMode(mode) {
         if (!this.initialized) {
             console.warn('Model config not loaded, using fallback');
-            return mode === 'uas-math' ? 'gpt-4.1' : 
-                   mode === 'uas' ? 'gpt-4o' : 'gpt-3.5-turbo';
+            return 'gpt-5.1'; // Default ke gpt-5.1 untuk semua mode
         }
         return this.config.defaults[mode] || this.config.defaults.default;
     }

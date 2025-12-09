@@ -75,7 +75,7 @@ class Database {
             user TEXT NOT NULL,
             response TEXT NOT NULL,
             jumlah_token INT DEFAULT 0,
-            model VARCHAR(100) DEFAULT 'gpt-3.5-turbo',
+            model VARCHAR(100) DEFAULT 'gpt-5.1',
             mode VARCHAR(20) DEFAULT 'default',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -93,7 +93,7 @@ class Database {
             $alterSqls = [
                 "ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS mode VARCHAR(20) DEFAULT 'default'",
                 "ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS jumlah_token INT DEFAULT 0",
-                "ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS model VARCHAR(100) DEFAULT 'gpt-3.5-turbo'"
+                "ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS model VARCHAR(100) DEFAULT 'gpt-5.1'"
             ];
             
             foreach ($alterSqls as $alterSql) {
@@ -120,7 +120,7 @@ class Database {
     /**
      * Menyimpan percakapan chat ke database
      */
-    public function saveChatHistory($userMessage, $response, $ipAddress, $mode = 'default', $jumlahToken = 0, $model = 'gpt-3.5-turbo') {
+    public function saveChatHistory($userMessage, $response, $ipAddress, $mode = 'default', $jumlahToken = 0, $model = 'gpt-5.1') {
         $pdo = $this->connect();
         
         $sql = "INSERT INTO chat_history (ip_address, user, response, jumlah_token, model, mode) VALUES (?, ?, ?, ?, ?, ?)";
@@ -137,7 +137,7 @@ class Database {
     /**
      * Method alias untuk kompatibilitas
      */
-    public function saveMessage($message, $response, $mode = 'default', $jumlahToken = 0, $model = 'gpt-3.5-turbo') {
+    public function saveMessage($message, $response, $mode = 'default', $jumlahToken = 0, $model = 'gpt-5.1') {
         $ipAddress = self::getRealIpAddress();
         return $this->saveChatHistory($message, $response, $ipAddress, $mode, $jumlahToken, $model);
     }
@@ -201,22 +201,33 @@ class Database {
     }
 
     /**
-     * Mendapatkan IP address user yang real
+     * Mendapatkan IP address user yang real dengan validasi
      */
     public static function getRealIpAddress() {
-        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            return $_SERVER['HTTP_CLIENT_IP'];
-        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            return $_SERVER['HTTP_X_FORWARDED_FOR'];
-        } elseif (!empty($_SERVER['HTTP_X_FORWARDED'])) {
-            return $_SERVER['HTTP_X_FORWARDED'];
-        } elseif (!empty($_SERVER['HTTP_FORWARDED_FOR'])) {
-            return $_SERVER['HTTP_FORWARDED_FOR'];
-        } elseif (!empty($_SERVER['HTTP_FORWARDED'])) {
-            return $_SERVER['HTTP_FORWARDED'];
+        $ip = null;
+        
+        // Priority order: REMOTE_ADDR is most reliable in non-proxy environments
+        // For proxy environments, check X-Forwarded-For but validate it
+        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            // X-Forwarded-For can contain multiple IPs, get the first one (client IP)
+            $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+            $ip = trim($ips[0]);
+        } elseif (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+            $ip = $_SERVER['HTTP_CLIENT_IP'];
         } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
+            $ip = $_SERVER['REMOTE_ADDR'];
+        }
+        
+        // Validate IP address format to prevent spoofing with malicious data
+        if ($ip && filter_var($ip, FILTER_VALIDATE_IP)) {
+            return $ip;
+        }
+        
+        // Fallback to REMOTE_ADDR or unknown
+        if (!empty($_SERVER['REMOTE_ADDR']) && filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP)) {
             return $_SERVER['REMOTE_ADDR'];
         }
+        
         return 'unknown';
     }
 }
@@ -230,4 +241,4 @@ function getChatDatabase() {
     return $database;
 }
 
-?> 
+?>

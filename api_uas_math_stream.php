@@ -56,9 +56,9 @@ $imageBase64 = $data['image'] ?? '';
 // Tidak ada validasi wajib gambar
 
 // Validate API key
-$apiKey = getenv('OPENAI_API_KEY');
-if (!$apiKey) {
-    sendSSE(['error' => 'API key tidak ditemukan'], 'error');
+$apiKey = getEnvironmentVar('OPENAI_API_KEY');
+if (!$apiKey || $apiKey === 'your_openai_api_key_here') {
+    sendSSE(['error' => 'OpenAI API Key tidak dikonfigurasi dengan benar'], 'error');
     exit;
 }
 
@@ -119,9 +119,15 @@ $requestData = [
     'model' => $modelConfig['model'],
     'messages' => $messages,
     'stream' => true,
-    'max_tokens' => $modelConfig['max_tokens'],
     'temperature' => 0.3 // Lower temperature for more consistent math solutions
 ];
+
+// Add appropriate token limit parameter based on model
+if (isset($modelConfig['use_max_completion_tokens']) && $modelConfig['use_max_completion_tokens']) {
+    $requestData['max_completion_tokens'] = $modelConfig['max_tokens'];
+} else {
+    $requestData['max_tokens'] = $modelConfig['max_tokens'];
+}
 
 // Initialize response collection
 $fullResponse = '';

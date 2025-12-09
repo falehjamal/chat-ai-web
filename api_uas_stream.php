@@ -93,9 +93,15 @@ $data = [
         ['role' => 'user', 'content' => $userMessage]
     ],
     'temperature' => 0.3, // Suhu yang lebih rendah untuk jawaban yang lebih fokus
-    'max_tokens' => $modelConfig['max_tokens'],
     'stream' => true // Enable streaming
 ];
+
+// Add appropriate token limit parameter based on model
+if (isset($modelConfig['use_max_completion_tokens']) && $modelConfig['use_max_completion_tokens']) {
+    $data['max_completion_tokens'] = $modelConfig['max_tokens'];
+} else {
+    $data['max_tokens'] = $modelConfig['max_tokens'];
+}
 
 // Initialize cURL for streaming
 $ch = curl_init('https://api.openai.com/v1/chat/completions');

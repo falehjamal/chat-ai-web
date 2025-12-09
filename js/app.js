@@ -1101,7 +1101,7 @@ Lanjutkan?`;
                 
                 // Reset to default mode and model
                 currentMode = 'default';
-                selectedModel = 'gpt-3.5-turbo';
+                selectedModel = 'gpt-5.1';
                 currentImage = null;
                 
                 // Reset UI

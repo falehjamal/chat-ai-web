@@ -17,6 +17,9 @@ $defaultModel = ModelConfig::getDefaultModelForMode('default');
     <link rel="stylesheet" href="css/fonts.css">
     <link rel="stylesheet" href="css/style.css">
     
+    <!-- Lucide Icons - Modern & Lightweight -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
     <!-- MathJax for math formula rendering -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>
@@ -40,20 +43,30 @@ $defaultModel = ModelConfig::getDefaultModelForMode('default');
 </head>
 <body>
     <div id="mode-selector">
-        <button id="mode-default" class="mode-btn active">Mode Chat</button>
-        <button id="mode-uas" class="mode-btn">Mode OCR Low</button>
-        <button id="mode-uas-math" class="mode-btn">Mode OCR High</button>
+        <button id="mode-default" class="mode-btn active">
+            <i data-lucide="message-circle"></i>
+            <span>Chat</span>
+        </button>
+        <button id="mode-uas" class="mode-btn">
+            <i data-lucide="scan-text"></i>
+            <span>OCR Low</span>
+        </button>
+        <button id="mode-uas-math" class="mode-btn">
+            <i data-lucide="calculator"></i>
+            <span>OCR High</span>
+        </button>
     </div>
     
     <div id="chat-controls">
         <div id="model-selector">
-            <!-- <label for="gpt-model">Model :</label> -->
             <select id="gpt-model" class="model-select">
                 <?= ModelConfig::getHtmlOptions($defaultModel) ?>
             </select>
         </div>
         <div id="clear-data-container">
-            <button id="clear-cache-btn" title="Hapus semua cache dan localStorage">🗑️ Clear Data</button>
+            <button id="clear-cache-btn" class="icon-btn" title="Hapus semua cache dan localStorage">
+                <i data-lucide="database-zap"></i>
+            </button>
         </div>
     </div>
     
@@ -63,12 +76,20 @@ $defaultModel = ModelConfig::getDefaultModelForMode('default');
             <input type="file" id="image-input" accept="image/*" style="display: none;">
             <div id="image-preview-container" style="display: none;">
                 <img id="image-preview" src="" alt="Preview">
-                <button id="remove-image">×</button>
+                <button id="remove-image" class="icon-btn-small" title="Hapus gambar">
+                    <i data-lucide="x"></i>
+                </button>
             </div>
-            <textarea id="user-input" placeholder="Type your message..." rows="1"></textarea>
-            <button id="image-btn" title="Upload gambar untuk Mode OCR High" style="display: none;">📸</button>
-            <button id="clear-btn" title="Klik: Hapus mode saat ini | Klik kanan atau double-click: Hapus semua mode">🗑️</button>
-            <button id="send-btn">Send</button>
+            <textarea id="user-input" placeholder="Ketik pesan..." rows="1"></textarea>
+            <button id="image-btn" class="icon-btn" title="Upload gambar untuk Mode OCR High" style="display: none;">
+                <i data-lucide="camera"></i>
+            </button>
+            <button id="clear-btn" class="icon-btn" title="Klik: Hapus mode ini | Double-click: Hapus semua">
+                <i data-lucide="trash-2"></i>
+            </button>
+            <button id="send-btn" class="send-btn" title="Kirim pesan">
+                <i data-lucide="send"></i>
+            </button>
         </div>
         <div id="ocr-progress">
             <div class="progress-container">
@@ -90,5 +111,10 @@ $defaultModel = ModelConfig::getDefaultModelForMode('default');
     <script src="js/model-config.js"></script>
     <script src="js/streaming.js"></script>
     <script src="js/app.js"></script>
+    
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 </html>

@@ -8,6 +8,9 @@ require_once 'env_helper.php';
 // Load model configuration
 require_once 'model_config.php';
 
+// Load database helper
+require_once 'database.php';
+
 // Set headers for SSE (Server-Sent Events)
 header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
@@ -30,6 +33,10 @@ function sendSSE($data, $event = 'message') {
 try {
     // Load environment variables
     loadEnv();
+    
+    // Inisialisasi database dan buat tabel jika diperlukan
+    $database = getChatDatabase();
+    $database->initialize();
 } catch (Exception $e) {
     sendSSE(['error' => 'Gagal memuat konfigurasi: ' . $e->getMessage()], 'error');
     exit;
@@ -103,13 +110,20 @@ $modelConfig = ModelConfig::getApiConfig($selectedModel);
 sendSSE(['type' => 'typing_start'], 'status');
 
 // Prepare the payload for ChatGPT with streaming
+// Use max_completion_tokens for newer models (gpt-5.1, o1, etc.) and max_tokens for older models
 $data = [
     'model' => $modelConfig['model'],
     'messages' => $messages,
     'temperature' => $modelConfig['temperature'],
-    'max_tokens' => $modelConfig['max_tokens'],
     'stream' => true // Enable streaming
 ];
+
+// Add appropriate token limit parameter based on model
+if (isset($modelConfig['use_max_completion_tokens']) && $modelConfig['use_max_completion_tokens']) {
+    $data['max_completion_tokens'] = $modelConfig['max_tokens'];
+} else {
+    $data['max_tokens'] = $modelConfig['max_tokens'];
+}
 
 // Initialize cURL for streaming
 $ch = curl_init('https://api.openai.com/v1/chat/completions');

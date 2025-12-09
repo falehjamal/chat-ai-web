@@ -15,7 +15,7 @@ class StreamingChat {
         console.log('🎯 Endpoint:', endpoint);
         console.log('🤖 Model:', model);
         console.log('⏭️ Skip user message:', skipUserMessage);
-        
+
         if (this.isStreaming) {
             console.warn('Already streaming, please wait...');
             return;
@@ -35,7 +35,7 @@ class StreamingChat {
 
         // Create bot message placeholder for streaming
         this.currentBotMessageElement = this.createBotMessagePlaceholder();
-        
+
         // Start streaming directly without typing indicator
 
         // Prepare data for streaming with image
@@ -59,7 +59,7 @@ class StreamingChat {
     }
 
     // Send message with streaming response
-    sendMessageWithStreaming(message, chatHistory, endpoint = 'api_stream.php', model = 'gpt-4', onComplete = null) {
+    sendMessageWithStreaming(message, chatHistory, endpoint = 'api_stream.php', model = 'gpt-5.1', onComplete = null) {
         if (this.isStreaming) {
             console.warn('Already streaming, please wait...');
             return;
@@ -73,7 +73,7 @@ class StreamingChat {
 
         // Create bot message placeholder for streaming
         this.currentBotMessageElement = this.createBotMessagePlaceholder();
-        
+
         // Start streaming directly without typing indicator
 
         // Prepare data for streaming
@@ -109,7 +109,7 @@ class StreamingChat {
 
             while (true) {
                 const { done, value } = await reader.read();
-                
+
                 if (done) {
                     break;
                 }
@@ -151,7 +151,7 @@ class StreamingChat {
 
         if (line.startsWith('data: ')) {
             const dataStr = line.substring(6);
-            
+
             try {
                 const data = JSON.parse(dataStr);
                 this.handleStreamEvent(data, this.currentEventType || 'message');
@@ -164,7 +164,7 @@ class StreamingChat {
     // Handle stream events
     handleStreamEvent(data, eventType) {
         console.log('📨 Handling stream event:', eventType, data);
-        
+
         switch (eventType) {
             case 'status':
                 if (data.type === 'typing_start') {
@@ -224,7 +224,7 @@ class StreamingChat {
         const $chatBox = $('#chat-box');
         const $messageDiv = $('<div>').addClass('message user-message');
         const $messageContent = $('<div>').addClass('message-content');
-        
+
         // If there's an image, display it
         if (hasImage && imageBase64) {
             const $imageElement = $('<img>')
@@ -238,14 +238,14 @@ class StreamingChat {
                     'margin': '10px 0',
                     'cursor': 'pointer'
                 });
-            
+
             // Add click to enlarge functionality
-            $imageElement.on('click', function() {
+            $imageElement.on('click', function () {
                 this.openImageModal(imageBase64);
             }.bind(this));
-            
+
             $messageContent.append($imageElement);
-            
+
             // Add image info if there's also a text message
             if (message) {
                 const $messageText = $('<div>').addClass('message-text').text(message);
@@ -265,7 +265,7 @@ class StreamingChat {
             const $messageText = $('<div>').addClass('message-text').text(displayMessage);
             $messageContent.append($messageText);
         }
-        
+
         $messageDiv.append($messageContent);
         $chatBox.append($messageDiv);
         this.scrollToBottom();
@@ -292,13 +292,13 @@ class StreamingChat {
                     'cursor': 'pointer'
                 })
                 .html('<img style="max-width: 90%; max-height: 90%; border-radius: 8px;">')
-                .on('click', function() {
+                .on('click', function () {
                     $(this).hide();
                 });
-            
+
             $('body').append($modal);
         }
-        
+
         $modal.find('img').attr('src', imageData);
         $modal.show();
     }
@@ -308,11 +308,11 @@ class StreamingChat {
         const $chatBox = $('#chat-box');
         const $messageDiv = $('<div>').addClass('message bot-message streaming').attr('id', 'streaming-message');
         const $messageContent = $('<div>').addClass('message-content');
-        
+
         const messageHtml = `
             <span class="streaming-text"></span>
         `;
-        
+
         $messageContent.html(messageHtml);
         $messageDiv.append($messageContent);
         $chatBox.append($messageDiv);
@@ -335,11 +335,11 @@ class StreamingChat {
         if (!this.currentBotMessageElement) return;
 
         const $streamingText = this.currentBotMessageElement.find('.streaming-text');
-        
+
         // Add text directly
         let currentText = $streamingText.text();
         const newText = currentText + text;
-        
+
         $streamingText.text(newText);
         this.scrollToBottom();
     }
@@ -349,32 +349,32 @@ class StreamingChat {
         if (this.currentBotMessageElement) {
             this.currentBotMessageElement.removeClass('streaming');
             this.currentBotMessageElement.removeAttr('id');
-            
+
             // Replace streaming content with final formatted content using markdown renderer
             const finalText = this.streamingText;
             const formattedHtml = this.formatBotResponseWithMath(finalText);
-            
+
             // Add copy button and content to message-content div
             const messageWithCopyBtn = this.addCopyButton(formattedHtml);
             const $messageContent = this.currentBotMessageElement.find('.message-content');
             const $messageText = $('<div>').addClass('message-text').html(formattedHtml);
-            
+
             // Replace content with copy button and formatted text
             $messageContent.html(`
                 ${formattedHtml}
                 <button class="copy-btn" title="Copy response">📋</button>
             `);
-            
+
             // Render math expressions
             if (window.markdownMathRenderer) {
                 markdownMathRenderer.renderMath(this.currentBotMessageElement[0]);
             }
-            
+
             // Setup copy button functionality
             this.setupCopyButton(this.currentBotMessageElement);
         }
     }
-    
+
     // Add copy button to message
     addCopyButton(htmlContent) {
         return `
@@ -382,36 +382,36 @@ class StreamingChat {
             <button class="copy-btn" title="Copy response">📋</button>
         `;
     }
-    
+
     // Setup copy button functionality
     setupCopyButton(messageElement) {
         const copyBtn = messageElement.find('.copy-btn');
         const originalText = this.streamingText;
-        
-        copyBtn.on('click', async function(e) {
+
+        copyBtn.on('click', async function (e) {
             e.preventDefault();
             e.stopPropagation();
-            
+
             try {
                 await navigator.clipboard.writeText(originalText);
-                
+
                 // Visual feedback
                 const btn = $(this);
-                const originalText = btn.text();
-                
+                const originalBtnText = btn.text();
+
                 btn.addClass('copied')
-                   .text('Copied!')
-                   .css('background', '#10b981');
-                
+                    .text('Copied!')
+                    .css('background', '#10b981');
+
                 setTimeout(() => {
                     btn.removeClass('copied')
-                       .text(originalText)
-                       .css('background', '');
+                        .text(originalBtnText)
+                        .css('background', '');
                 }, 2000);
-                
+
             } catch (err) {
                 console.error('Failed to copy text: ', err);
-                
+
                 // Fallback for older browsers
                 const textArea = document.createElement('textarea');
                 textArea.value = originalText;
@@ -419,7 +419,7 @@ class StreamingChat {
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-                
+
                 // Visual feedback for fallback
                 const btn = $(this);
                 btn.text('Copied!').css('background', '#10b981');
@@ -433,7 +433,7 @@ class StreamingChat {
     // Format bot response with markdown and math rendering - ALL FORMATTING IN FRONTEND
     formatBotResponseWithMath(text) {
         if (!text) return '';
-        
+
         // ALWAYS use the markdown math renderer for ALL modes
         if (window.markdownMathRenderer) {
             console.log('🎨 Using frontend renderer for ALL formatting');
@@ -448,7 +448,7 @@ class StreamingChat {
     // Enhanced fallback formatting with more regex processing
     formatBotResponseEnhanced(text) {
         if (!text) return '';
-        
+
         let formatted = text
             // Clean up excessive line breaks first
             .replace(/\n{3,}/g, '\n\n')
@@ -480,14 +480,14 @@ class StreamingChat {
             .replace(/<p><\/p>/g, '')
             // Clean up
             .trim();
-            
+
         return formatted;
     }
 
     // Handle stream errors
     handleStreamError(errorMessage) {
         console.error('Stream error:', errorMessage);
-        
+
         if (this.currentBotMessageElement) {
             this.currentBotMessageElement.html(
                 `<span class="error-message">❌ Error: ${this.escapeHtml(errorMessage)}</span>`

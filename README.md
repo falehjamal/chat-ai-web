@@ -5,7 +5,7 @@ Aplikasi web chat AI modern dengan OpenAI GPT API, sistem chat history lengkap, 
 ## ✨ Fitur Utama
 
 - 💬 **Multi-Mode Chat**: Mode Chat, OCR Low, dan OCR High
-- 🧠 **AI Powered**: OpenAI GPT (GPT-3.5, GPT-4o, GPT-4.1) untuk respons cerdas
+- 🧠 **AI Powered**: OpenAI GPT (GPT-5.1, GPT-4o, GPT-4.1) untuk respons cerdas
 - 📷 **OCR + Vision**: Upload gambar soal matematika untuk analisis GPT Vision
 - 📊 **Chat History**: Sistem perekaman dan history chat lengkap dengan database
 - 🎯 **Mode OCR High**: Khusus untuk menyelesaikan soal matematika dari gambar
@@ -109,7 +109,7 @@ chat-ai-web/
 
 ### 💬 Mode Chat
 1. **Pilih Mode**: "Mode Chat" di dropdown
-2. **Pilih Model**: GPT-3.5, GPT-4o, atau GPT-4.1
+2. **Pilih Model**: GPT-5.1, GPT-4o, atau GPT-4.1
 3. **Chat**: Ketik pesan dan tekan Enter
 4. **Context**: Riwayat chat tersimpan dengan konteks
 5. **Streaming**: Response real-time dari AI
@@ -142,7 +142,7 @@ chat-ai-web/
 
 | Model | Kecepatan | Akurasi | Best For | Token Limit |
 |-------|-----------|---------|----------|-------------|
-| **GPT-3.5 Turbo** | ⚡⚡⚡ | ⭐⭐⭐ | Chat umum, Q&A cepat | 4,096 |
+| **GPT-5.1** | ⚡⚡⚡ | ⭐⭐⭐⭐⭐ | Semua mode, Paling cerdas | 4,096 |
 | **GPT-4o** | ⚡⚡ | ⭐⭐⭐⭐ | Tugas kompleks, Vision | 8,192 |
 | **GPT-4.1** | ⚡ | ⭐⭐⭐⭐⭐ | Matematika, logika | 8,192 |
 
@@ -231,9 +231,9 @@ chmod 755 tmp/
 ```json
 {
     "message": "Halo AI!",
-    "model": "gpt-3.5-turbo",
+    "model": "gpt-5.1",
     "history": [...],
-    "selectedModel": "gpt-3.5-turbo"
+    "selectedModel": "gpt-5.1"
 }
 ```
 
