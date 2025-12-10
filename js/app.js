@@ -184,8 +184,10 @@ $(document).ready(async function() {
                 const imageData = event.target.result;
                 
                 if (currentMode === 'uas-math') {
-                    // Mode OCR High: Langsung kirim gambar ke chat dan simpan ke localStorage
-                    handleMathImageUpload(imageData);
+                    // Mode OCR High: Tampilkan preview dan simpan untuk dikirim ke GPT (sama seperti paste)
+                    currentImage = imageData;
+                    $imagePreview.attr('src', currentImage);
+                    $imagePreviewContainer.show();
                 } else {
                     // Mode lain: Tampilkan preview seperti biasa
                     currentImage = imageData;
