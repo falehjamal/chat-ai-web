@@ -75,7 +75,7 @@ class Database {
             user TEXT NOT NULL,
             response TEXT NOT NULL,
             jumlah_token INT DEFAULT 0,
-            model VARCHAR(100) DEFAULT 'gpt-5.1',
+            model VARCHAR(100) DEFAULT 'gpt-5.2',
             mode VARCHAR(20) DEFAULT 'default',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -93,7 +93,7 @@ class Database {
             $alterSqls = [
                 "ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS mode VARCHAR(20) DEFAULT 'default'",
                 "ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS jumlah_token INT DEFAULT 0",
-                "ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS model VARCHAR(100) DEFAULT 'gpt-5.1'"
+                "ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS model VARCHAR(100) DEFAULT 'gpt-5.2'"
             ];
             
             foreach ($alterSqls as $alterSql) {
@@ -120,7 +120,7 @@ class Database {
     /**
      * Menyimpan percakapan chat ke database
      */
-    public function saveChatHistory($userMessage, $response, $ipAddress, $mode = 'default', $jumlahToken = 0, $model = 'gpt-5.1') {
+    public function saveChatHistory($userMessage, $response, $ipAddress, $mode = 'default', $jumlahToken = 0, $model = 'gpt-5.2') {
         $pdo = $this->connect();
         
         $sql = "INSERT INTO chat_history (ip_address, user, response, jumlah_token, model, mode) VALUES (?, ?, ?, ?, ?, ?)";
@@ -137,7 +137,7 @@ class Database {
     /**
      * Method alias untuk kompatibilitas
      */
-    public function saveMessage($message, $response, $mode = 'default', $jumlahToken = 0, $model = 'gpt-5.1') {
+    public function saveMessage($message, $response, $mode = 'default', $jumlahToken = 0, $model = 'gpt-5.2') {
         $ipAddress = self::getRealIpAddress();
         return $this->saveChatHistory($message, $response, $ipAddress, $mode, $jumlahToken, $model);
     }

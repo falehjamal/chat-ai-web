@@ -5,7 +5,7 @@ Aplikasi web chat AI modern dengan OpenAI GPT API, sistem chat history lengkap, 
 ## ✨ Fitur Utama
 
 - 💬 **Multi-Mode Chat**: Mode Chat, OCR Low, dan OCR High
-- 🧠 **AI Powered**: OpenAI GPT (GPT-5.1, GPT-4o, GPT-4.1) untuk respons cerdas
+- 🧠 **AI Powered**: OpenAI GPT (GPT-5.2, GPT-5.1, GPT-5 Mini) untuk respons cerdas
 - 📷 **OCR + Vision**: Upload gambar soal matematika untuk analisis GPT Vision
 - 📊 **Chat History**: Sistem perekaman dan history chat lengkap dengan database
 - 🎯 **Mode OCR High**: Khusus untuk menyelesaikan soal matematika dari gambar
@@ -109,7 +109,7 @@ chat-ai-web/
 
 ### 💬 Mode Chat
 1. **Pilih Mode**: "Mode Chat" di dropdown
-2. **Pilih Model**: GPT-5.1, GPT-4o, atau GPT-4.1
+2. **Pilih Model**: GPT-5.2, GPT-5.1, atau GPT-5 Mini
 3. **Chat**: Ketik pesan dan tekan Enter
 4. **Context**: Riwayat chat tersimpan dengan konteks
 5. **Streaming**: Response real-time dari AI
@@ -142,9 +142,9 @@ chat-ai-web/
 
 | Model | Kecepatan | Akurasi | Best For | Token Limit |
 |-------|-----------|---------|----------|-------------|
-| **GPT-5.1** | ⚡⚡⚡ | ⭐⭐⭐⭐⭐ | Semua mode, Paling cerdas | 4,096 |
-| **GPT-4o** | ⚡⚡ | ⭐⭐⭐⭐ | Tugas kompleks, Vision | 8,192 |
-| **GPT-4.1** | ⚡ | ⭐⭐⭐⭐⭐ | Matematika, logika | 8,192 |
+| **GPT-5.2** | ⚡⚡⚡ | ⭐⭐⭐⭐⭐ | Default semua mode | 4,096 |
+| **GPT-5.1** | ⚡⚡⚡ | ⭐⭐⭐⭐⭐ | Alternatif unggulan | 4,096 |
+| **GPT-5 Nano** | ⚡⚡⚡⚡ | ⭐⭐⭐ | Chat ringan & ekonomis | 2,048 |
 
 ## 💾 Database Schema
 
@@ -231,9 +231,9 @@ chmod 755 tmp/
 ```json
 {
     "message": "Halo AI!",
-    "model": "gpt-5.1",
+    "model": "gpt-5-nano",
     "history": [...],
-    "selectedModel": "gpt-5.1"
+    "selectedModel": "gpt-5.2"
 }
 ```
 
@@ -241,7 +241,7 @@ chmod 755 tmp/
 ```json
 {
     "message": "Analisis gambar ini",
-    "model": "gpt-4o",
+    "model": "gpt-5-nano",
     "imageData": "data:image/jpeg;base64,..."
 }
 ```

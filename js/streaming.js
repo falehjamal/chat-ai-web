@@ -9,7 +9,7 @@ class StreamingChat {
     }
 
     // Send message with streaming response for math mode with optional image
-    sendMathMessageWithStreaming(message, chatHistory, endpoint = 'api_uas_math_stream.php', model = 'gpt-4o', imageBase64 = null, onComplete = null, skipUserMessage = false) {
+    sendMathMessageWithStreaming(message, chatHistory, endpoint = 'api_uas_math_stream.php', model = 'gpt-5.2', imageBase64 = null, onComplete = null, skipUserMessage = false) {
         console.log('🚀 Starting sendMathMessageWithStreaming');
         console.log('📸 Image:', imageBase64 ? 'Present (' + imageBase64.length + ' chars)' : 'No image (text only)');
         console.log('🎯 Endpoint:', endpoint);
@@ -59,7 +59,7 @@ class StreamingChat {
     }
 
     // Send message with streaming response
-    sendMessageWithStreaming(message, chatHistory, endpoint = 'api_stream.php', model = 'gpt-5.1', onComplete = null) {
+    sendMessageWithStreaming(message, chatHistory, endpoint = 'api_stream.php', model = 'gpt-5.2', onComplete = null) {
         if (this.isStreaming) {
             console.warn('Already streaming, please wait...');
             return;

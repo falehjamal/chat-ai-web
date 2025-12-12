@@ -23,9 +23,21 @@ class ModelConfig {
      * ]
      */
     private static $models = [
+        'gpt-5.2' => [
+            'name' => 'GPT-5.2',
+            'description' => 'Model Paling Canggih (Default untuk semua mode)',
+            'api_model' => 'gpt-5.2',
+            'max_tokens' => 4096,
+            'temperature' => 0.3,
+            'enabled' => true,
+            'recommended_for' => ['default', 'uas', 'uas-math', 'ocr'],
+            'pricing_tier' => 'high',
+            'price_per_1m_tokens' => '$18.00',
+            'use_max_completion_tokens' => true
+        ],
         'gpt-5.1' => [
             'name' => 'GPT-5.1',
-            'description' => 'Model Terbaru & Terbaik (Sangat Cerdas dan Akurat)',
+            'description' => 'Model Terbaru & Akurat (Alternatif)',
             'api_model' => 'gpt-5.1',
             'max_tokens' => 4096,
             'temperature' => 0.3,
@@ -33,65 +45,19 @@ class ModelConfig {
             'recommended_for' => ['default', 'uas', 'uas-math', 'ocr'],
             'pricing_tier' => 'high',
             'price_per_1m_tokens' => '$15.00',
-            'use_max_completion_tokens' => true // GPT-5.1 uses max_completion_tokens instead of max_tokens
+            'use_max_completion_tokens' => true
         ],
-        'gpt-4.1-nano' => [
-            'name' => 'GPT-4.1 nano',
-            'description' => 'Versi Mini (Murah dan Ringan)',
-            'api_model' => 'gpt-4.1-nano-2025-04-14',
-            'max_tokens' => 1000,
-            'temperature' => 0.7,
-            'enabled' => true,
-            'recommended_for' => [],
-            'pricing_tier' => 'low',
-            'price_per_1m_tokens' => '$0.25'
-        ],
-        'gpt-4.1' => [
-            'name' => 'GPT-4.1',
-            'description' => 'Akurasi Tinggi (Terbaik untuk matematika dan logika kompleks)',
-            'api_model' => 'gpt-4.1-2025-04-14',
-            'max_tokens' => 1000,
-            'temperature' => 0.3,
-            'enabled' => true,
-            'recommended_for' => [],
-            'pricing_tier' => 'medium',
-            'price_per_1m_tokens' => '$5.00'
-        ],
-        'gpt-4o' => [
-            'name' => 'GPT-4o',
-            'description' => 'Pintar & Fleksibel (Ideal untuk tugas, Chat, OCR, dan esai)',
-            'api_model' => 'gpt-4o', // Gunakan default terbaru
-            'max_tokens' => 1000,
-            'temperature' => 0.3,
-            'enabled' => true,
-            'recommended_for' => [],
-            'pricing_tier' => 'high',
-            'price_per_1m_tokens' => '$12.50'
-        ],
-
-        // Contoh model GPT lainnya yang bisa ditambahkan
-        'gpt-4-turbo' => [
-            'name' => 'GPT-4 Turbo',
-            'description' => 'Model GPT-4 yang lebih cepat dan efisien',
-            'api_model' => 'gpt-4-turbo-2024-04-09',
-            'max_tokens' => 4096,
-            'temperature' => 0.5,
-            'enabled' => false, // Nonaktif sampai diperlukan
-            'recommended_for' => ['uas', 'uas-math'],
-            'pricing_tier' => 'high',
-            'price_per_1m_tokens' => '$10.00'
-        ],
-        
-        'gpt-4-mini' => [
-            'name' => 'GPT-4 Mini',
-            'description' => 'Model GPT-4 yang ekonomis untuk tugas ringan',
-            'api_model' => 'gpt-4-mini',
+        'gpt-5-nano' => [
+            'name' => 'GPT-5 Nano',
+            'description' => 'Model ringan dan ekonomis',
+            'api_model' => 'gpt-5-nano-2025-08-07',
             'max_tokens' => 2048,
-            'temperature' => 0.6,
-            'enabled' => false, // Nonaktif sampai tersedia
+            'temperature' => 1,
+            'enabled' => true,
             'recommended_for' => ['default'],
             'pricing_tier' => 'low',
-            'price_per_1m_tokens' => '$0.25'
+            'price_per_1m_tokens' => '$0.50',
+            'use_max_completion_tokens' => true
         ],
     ];
 
@@ -117,7 +83,7 @@ class ModelConfig {
      */
     public static function getApiModelName($key) {
         $model = self::getModel($key);
-        return $model ? $model['api_model'] : 'gpt-5.1'; // fallback
+        return $model ? $model['api_model'] : 'gpt-5.2'; // fallback
     }
 
     /**
@@ -126,9 +92,9 @@ class ModelConfig {
     public static function getApiConfig($key) {
         $model = self::getModel($key);
         if (!$model) {
-            // Fallback configuration - gunakan gpt-5.1 sebagai default
+            // Fallback configuration - gunakan gpt-5.2 sebagai default
             return [
-                'model' => 'gpt-5.1',
+                'model' => 'gpt-5.2',
                 'max_tokens' => 4096,
                 'temperature' => 0.3,
                 'use_max_completion_tokens' => true
@@ -167,14 +133,14 @@ class ModelConfig {
             return array_keys($recommended)[0];
         }
 
-        // Fallback berdasarkan mode - semua mode menggunakan gpt-5.1 sebagai default
+        // Fallback berdasarkan mode - semua mode menggunakan gpt-5.2 sebagai default
         switch ($mode) {
             case 'uas-math':
-                return 'gpt-5.1';
+                return 'gpt-5.2';
             case 'uas':
-                return 'gpt-5.1';
+                return 'gpt-5.2';
             default:
-                return 'gpt-5.1';
+                return 'gpt-5.2';
         }
     }
 

@@ -48,7 +48,7 @@ if (empty($rawInput)) {
     // Jika tidak ada POST data, ambil dari GET parameters
     $userMessage = $_GET['message'] ?? '';
     $chatHistory = json_decode($_GET['history'] ?? '[]', true);
-    $selectedModel = $_GET['model'] ?? 'gpt-4';
+    $selectedModel = $_GET['model'] ?? ModelConfig::getDefaultModelForMode('default');
 } else {
     $data = json_decode($rawInput, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
@@ -137,7 +137,13 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, [
 
 // Set up streaming callback
 $fullResponse = '';
-curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $chunk) use (&$fullResponse, $userMessage, $selectedModel) {
+$rawApiResponse = '';
+curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $chunk) use (&$fullResponse, &$rawApiResponse, $userMessage, $selectedModel) {
+    // Capture raw payload for debugging (useful when API returns non-SSE JSON errors)
+    if (strlen($rawApiResponse) < 50000) {
+        $rawApiResponse .= $chunk;
+    }
+
     $lines = explode("\n", $chunk);
     
     foreach ($lines as $line) {
@@ -211,7 +217,17 @@ if ($curlError) {
 }
 
 if ($httpCode !== 200) {
-    sendSSE(['error' => "API request failed with status: $httpCode"], 'error');
+    $details = null;
+    $decoded = json_decode($rawApiResponse, true);
+    if (json_last_error() === JSON_ERROR_NONE && isset($decoded['error'])) {
+        $details = $decoded['error']['message'] ?? json_encode($decoded['error']);
+    } elseif (!empty($rawApiResponse)) {
+        $details = mb_substr(trim($rawApiResponse), 0, 2000, 'UTF-8');
+    }
+    sendSSE([
+        'error' => "API request failed with status: $httpCode",
+        'details' => $details
+    ], 'error');
     exit;
 }
 

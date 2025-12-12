@@ -131,6 +131,7 @@ if (isset($modelConfig['use_max_completion_tokens']) && $modelConfig['use_max_co
 
 // Initialize response collection
 $fullResponse = '';
+$rawApiResponse = '';
 
 // Initialize cURL
 $ch = curl_init();
@@ -143,9 +144,14 @@ curl_setopt_array($ch, [
         'Authorization: Bearer ' . $apiKey,
         'Content-Type: application/json',
     ],
-    CURLOPT_WRITEFUNCTION => function($ch, $data) use (&$fullResponse, $userMessage, $selectedModel) {
+    CURLOPT_WRITEFUNCTION => function($ch, $data) use (&$fullResponse, &$rawApiResponse, $userMessage, $selectedModel) {
         // Add debug logging
         error_log("OCR High API: Received data chunk: " . strlen($data) . " bytes");
+
+        // Capture raw payload for debugging (useful when API returns non-SSE JSON errors)
+        if (strlen($rawApiResponse) < 50000) {
+            $rawApiResponse .= $data;
+        }
         
         // Process streaming data
         $lines = explode("\n", $data);
@@ -218,7 +224,17 @@ if ($result === false) {
     sendSSE(['error' => 'cURL error: ' . $error], 'error');
 } elseif ($httpCode !== 200) {
     error_log("OCR High API: HTTP Error - " . $httpCode);
-    sendSSE(['error' => 'HTTP error: ' . $httpCode], 'error');
+    $details = null;
+    $decoded = json_decode($rawApiResponse, true);
+    if (json_last_error() === JSON_ERROR_NONE && isset($decoded['error'])) {
+        $details = $decoded['error']['message'] ?? json_encode($decoded['error']);
+    } elseif (!empty($rawApiResponse)) {
+        $details = mb_substr(trim($rawApiResponse), 0, 2000, 'UTF-8');
+    }
+    sendSSE([
+        'error' => 'HTTP error: ' . $httpCode,
+        'details' => $details
+    ], 'error');
 } else {
     error_log("OCR High API: Request completed successfully");
     sendSSE(['status' => 'completed'], 'complete');

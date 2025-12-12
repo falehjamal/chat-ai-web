@@ -27,7 +27,7 @@ CREATE TABLE `chat_history`  (
   `user` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT 'Pesan dari user',
   `response` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
   `jumlah_token` int(11) NULL DEFAULT 0 COMMENT 'Jumlah token yang digunakan dalam chat',
-  `model` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'gpt-5.1' COMMENT 'Model GPT yang digunakan',
+  `model` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'gpt-5.2' COMMENT 'Model GPT yang digunakan',
   `mode` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

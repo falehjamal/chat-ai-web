@@ -28,41 +28,34 @@ class ModelConfigManager {
             // Fallback ke konfigurasi default
             this.config = {
                 models: {
+                    'gpt-5.2': {
+                        name: 'GPT-5.2',
+                        description: 'Model Paling Canggih',
+                        recommended_for: ['default', 'uas', 'uas-math', 'ocr'],
+                        pricing_tier: 'high',
+                        price_per_1m_tokens: '$18.00'
+                    },
                     'gpt-5.1': {
                         name: 'GPT-5.1',
-                        description: 'Model Terbaru & Terbaik',
+                        description: 'Model Terbaru & Akurat',
                         recommended_for: ['default', 'uas', 'uas-math', 'ocr'],
                         pricing_tier: 'high',
                         price_per_1m_tokens: '$15.00'
                     },
-                    'gpt-4.1-nano': {
-                        name: 'GPT-4.1 nano',
-                        description: 'Murah dan Ringan',
-                        recommended_for: [],
+                    'gpt-5-nano': {
+                        name: 'GPT-5 Nano',
+                        description: 'Ringan & Ekonomis',
+                        recommended_for: ['default'],
                         pricing_tier: 'low',
-                        price_per_1m_tokens: '$0.25'
-                    },
-                    'gpt-4o': {
-                        name: 'GPT-4o', 
-                        description: 'Pintar & Fleksibel',
-                        recommended_for: [],
-                        pricing_tier: 'high',
-                        price_per_1m_tokens: '$12.50'
-                    },
-                    'gpt-4.1': {
-                        name: 'GPT-4.1',
-                        description: 'Akurasi Tinggi',
-                        recommended_for: [],
-                        pricing_tier: 'medium',
-                        price_per_1m_tokens: '$5.00'
+                        price_per_1m_tokens: '$0.50'
                     }
                 },
                 defaults: {
-                    default: 'gpt-5.1',
-                    uas: 'gpt-5.1',
-                    'uas-math': 'gpt-5.1'
+                    default: 'gpt-5.2',
+                    uas: 'gpt-5.2',
+                    'uas-math': 'gpt-5.2'
                 },
-                active_models: ['gpt-5.1', 'gpt-4.1-nano', 'gpt-4.1', 'gpt-4o']
+                active_models: ['gpt-5.2', 'gpt-5.1', 'gpt-5-nano']
             };
             this.initialized = true;
         }
@@ -83,7 +76,7 @@ class ModelConfigManager {
     getDefaultModelForMode(mode) {
         if (!this.initialized) {
             console.warn('Model config not loaded, using fallback');
-            return 'gpt-5.1'; // Default ke gpt-5.1 untuk semua mode
+            return 'gpt-5.2'; // Default ke gpt-5.2 untuk semua mode
         }
         return this.config.defaults[mode] || this.config.defaults.default;
     }
