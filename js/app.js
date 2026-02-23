@@ -1,19 +1,17 @@
 $(document).ready(async function() {
-    const MAX_HISTORY = 7; // Maximum number of messages to keep for context
+    const MAX_HISTORY = 7;
     
-    // Initialize model configuration manager
-    await modelConfigManager.loadConfig();
+    // Fixed model — no UI selector needed
+    const selectedModel = 'gpt-5.2';
     
     // Current mode tracking
     let currentMode = 'default';
-    let selectedModel = modelConfigManager.getDefaultModelForMode('default'); // Use centralized default
-    let currentImage = null; // For storing current image in OCR High mode
-    let currentImageId = null; // For storing current image ID
+    let currentImage = null;
+    let currentImageId = null;
     
     // Debug: Check if Tesseract is available
-    console.log('Tesseract available:', typeof Tesseract !== 'undefined');
     if (typeof Tesseract !== 'undefined') {
-        console.log('Tesseract object:', Tesseract);
+        console.log('Tesseract available');
     }
     
     // Load separate chat histories from localStorage
@@ -55,7 +53,6 @@ $(document).ready(async function() {
     const $modeDefault = $('#mode-default');
     const $modeUAS = $('#mode-uas');
     const $modeUASMath = $('#mode-uas-math');
-    const $modelSelect = $('#gpt-model');
     const $imageInput = $('#image-input');
     const $imageBtn = $('#image-btn');
     const $imagePreviewContainer = $('#image-preview-container');
@@ -84,36 +81,17 @@ $(document).ready(async function() {
         }
     });
 
-    // Function to update mode and automatically switch to recommended model
+    // Function to update mode UI
     function updateModeAndModel() {
         updateModeButtons();
         displayChatHistory();
         clearImagePreview();
-        
-        // Auto-select recommended model for the new mode
-        const recommendedModel = modelConfigManager.getDefaultModelForMode(currentMode);
-        if (recommendedModel && modelConfigManager.isValidModel(recommendedModel)) {
-            selectedModel = recommendedModel;
-            $modelSelect.val(selectedModel);
-            
-            // Save model preference to localStorage
-            localStorage.setItem('selectedGPTModel', selectedModel);
-            
-            console.log(`Switched to ${currentMode} mode, selected model: ${selectedModel}`);
-        }
-        
-        // Highlight recommended models for current mode
-        modelConfigManager.highlightRecommendedModels($modelSelect, currentMode);
     }
     
-    // Model selection handler
-    $modelSelect.on('change', function() {
-        selectedModel = $(this).val();
-        console.log('Model selected:', selectedModel);
-        
-        // Save model preference to localStorage
-        localStorage.setItem('selectedGPTModel', selectedModel);
-    });
+    // Initialize
+    displayChatHistory();
+    autoResizeTextarea($userInput);
+    updateModeButtons();
     
     function updateModeButtons() {
         $modeDefault.toggleClass('active', currentMode === 'default');
@@ -150,24 +128,6 @@ $(document).ready(async function() {
     displayChatHistory();
     autoResizeTextarea($userInput);
     updateModeButtons();
-    
-    // Initialize model dropdown and load saved preference
-    modelConfigManager.updateModelSelect($modelSelect, selectedModel);
-    const savedModel = localStorage.getItem('selectedGPTModel');
-    if (savedModel && modelConfigManager.isValidModel(savedModel)) {
-        selectedModel = savedModel;
-        $modelSelect.val(savedModel);
-    } else {
-        // If saved model is invalid, use default for current mode
-        selectedModel = modelConfigManager.getDefaultModelForMode(currentMode);
-        $modelSelect.val(selectedModel);
-    }
-    
-    // Highlight recommended models for current mode
-    modelConfigManager.highlightRecommendedModels($modelSelect, currentMode);
-    
-    // Clean up any leftover typing indicators - removed as streaming handles this
-    // hideTypingIndicator();
 
     // Image upload functionality for OCR High mode
     $imageBtn.on('click', function() {
@@ -396,8 +356,6 @@ $(document).ready(async function() {
 
             const worker = Tesseract.createWorker({
                 logger: m => {
-                    console.log(m);
-                    
                     if (m.status) {
                         $progressText.text(getProgressMessage(m.status));
                     }
@@ -573,52 +531,19 @@ $(document).ready(async function() {
     }
     
     function formatBotMessage(text) {
-        // ALWAYS use the advanced markdown math renderer for ALL modes
         if (window.markdownMathRenderer) {
-            console.log('🎨 Using frontend renderer for chat history formatting');
             return markdownMathRenderer.render(text);
-        } else {
-            // Enhanced fallback to handle all formatting in frontend
-            console.log('⚠️ Using enhanced fallback formatting for chat history');
-            return formatBotMessageEnhanced(text);
         }
-    }
-    
-    function formatBotMessageEnhanced(text) {
-        // Enhanced frontend formatting with ALL regex processing
-        let formattedText = text
-            // Clean up excessive line breaks first
+        // Simple fallback
+        return text
             .replace(/\n{3,}/g, '\n\n')
-            .replace(/\r\n/g, '\n')
-            .replace(/\r/g, '\n')
-            // Headers
-            .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
-            .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
-            .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
-            // Bold and italic
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            // Code
-            .replace(/`(.*?)`/g, '<code>$1</code>')
-            // Horizontal rules
-            .replace(/^---$/gm, '<hr>')
-            // Lists
-            .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
-            .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
-            // Blockquotes
-            .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
-            // Convert double line breaks to paragraph breaks
             .replace(/\n\n/g, '</p><p>')
-            // Add opening and closing p tags
             .replace(/^/, '<p>')
             .replace(/$/, '</p>')
-            // Convert remaining single line breaks to <br>
             .replace(/\n/g, '<br>')
-            // Clean up empty paragraphs
-            .replace(/<p>\s*<\/p>/g, '')
-            .replace(/<p><\/p>/g, '');
-        
-        return formattedText;
+            .replace(/<p>\s*<\/p>/g, '');
     }
     
     function scrollToBottom() {
@@ -652,8 +577,6 @@ $(document).ready(async function() {
             // Use createWorker approach for v2.1.5
             const worker = Tesseract.createWorker({
                 logger: m => {
-                    console.log(m);
-                    
                     // Update progress berdasarkan status
                     if (m.status) {
                         $progressText.text(getProgressMessage(m.status));
@@ -736,13 +659,6 @@ $(document).ready(async function() {
     function sendMessage() {
         const userMessage = $userInput.val().trim();
         
-        // Validate selected model
-        if (!modelConfigManager.isValidModel(selectedModel)) {
-            alert(`Model '${selectedModel}' tidak valid atau tidak aktif. Silakan pilih model lain.`);
-            $sendBtn.prop('disabled', false).removeClass('btn-loading');
-            return;
-        }
-        
         // For OCR High mode, allow either image or text (not both required)
         if (currentMode === 'uas-math') {
             if (!currentImage && !userMessage) {
@@ -788,17 +704,10 @@ $(document).ready(async function() {
             
             // For OCR High mode, send image data as well
             if (currentMode === 'uas-math') {
-                console.log('🟣 Sending OCR High mode message');
-                console.log('📸 Image data:', currentImage ? 'Present (' + currentImage.length + ' chars)' : 'No image');
-                console.log('💬 Message:', userMessage || 'No message');
-                
-                // Always show the image in streaming chat, but skip duplicate user message if image was uploaded without text
-                const skipUserMessage = false; // Always show in streaming to display image properly
+                const skipUserMessage = false;
                 
                 // OCR High mode: Tanpa history, setiap chat independen
                 streamingChat.sendMathMessageWithStreaming(userMessage, [], streamEndpoint, selectedModel, currentImage, (fullResponse) => {
-                    console.log('✅ OCR High streaming completed');
-                    console.log('📝 Full response length:', fullResponse ? fullResponse.length : 'No response');
                     
                     // Add messages to history after streaming completes
                     chatHistory = getCurrentChatHistory();
@@ -1101,14 +1010,12 @@ Lanjutkan?`;
                 // Clear chat display
                 $chatBox.empty();
                 
-                // Reset to default mode and model
+                // Reset to default mode
                 currentMode = 'default';
-                selectedModel = 'gpt-5.2';
                 currentImage = null;
                 
                 // Reset UI
                 updateModeButtons();
-                $modelSelect.val(selectedModel);
                 $userInput.val('');
                 
                 // Clear browser cache (if possible)

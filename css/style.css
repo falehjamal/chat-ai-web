@@ -35,16 +35,10 @@ body {
     width: 90%;
     max-width: 900px;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     margin-bottom: 10px;
     padding: 0 5px;
-}
-
-#model-selector {
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
 #clear-data-container {
@@ -52,38 +46,7 @@ body {
     align-items: center;
 }
 
-#model-selector label {
-    font-family: 'Inter', sans-serif;
-    font-weight: 500;
-    color: #374151;
-    font-size: 15px; /* Perbesar dari 14px ke 15px */
-}
 
-.model-select {
-    background: #ffffff;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-family: 'Inter', sans-serif;
-    font-size: 15px; /* Perbesar dari 14px ke 15px */
-    color: #374151;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 300px;
-    flex: 1;
-    max-width: 600px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.model-select:hover {
-    border-color: #3b82f6;
-}
-
-.model-select:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
 
 .mode-btn {
     background: #ffffff;
@@ -126,8 +89,25 @@ body {
     animation: slideInBot 0.3s ease-out;
 }
 
-.streaming-text {
-    display: inline;
+.streaming-content {
+    display: block;
+    min-height: 1.4em;
+}
+
+.streaming-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    background: #3b82f6;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: cursorBlink 0.8s steps(2) infinite;
+}
+
+@keyframes cursorBlink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
 }
 
 /* Typing indicator styles removed - streaming handles real-time display */
@@ -164,18 +144,7 @@ body {
     animation: slideInBot 0.3s ease-out;
 }
 
-/* Streaming text cursor effect */
-.streaming .streaming-text::after {
-    content: '|';
-    color: #3b82f6;
-    animation: blink 1s infinite;
-    margin-left: 2px;
-}
-
-@keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0; }
-}
+/* Streaming text cursor handled by .streaming-cursor element */
 
 /* Error message styles */
 .error-message {
@@ -536,29 +505,108 @@ body {
     opacity: 0.6;
 }
 
-/* Code blocks */
+/* Inline code */
 .bot-message code {
     background: #f3f4f6;
     color: #1f2937;
     padding: 2px 6px;
     border-radius: 4px;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 0.9em;
+    font-size: 0.85em;
 }
 
-.bot-message pre {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
+/* Code block wrapper */
+.code-block-wrapper {
+    position: relative;
+    margin: 14px 0;
     border-radius: 8px;
-    padding: 12px;
+    overflow: hidden;
+    background: #1e1e2e;
+}
+
+.code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    background: #181825;
+    border-bottom: 1px solid #313244;
+}
+
+.code-lang {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: #a6adc8;
+    text-transform: lowercase;
+    font-weight: 500;
+}
+
+.code-copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: none;
+    color: #a6adc8;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.code-copy-btn:hover {
+    background: #313244;
+    color: #cdd6f4;
+}
+
+.code-copy-btn.copied {
+    color: #a6e3a1;
+}
+
+.code-copy-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Fenced code blocks inside wrapper */
+.code-block-wrapper pre {
+    background: #1e1e2e;
+    margin: 0;
+    padding: 14px 16px;
+    overflow-x: auto;
+    border: none;
+    border-radius: 0;
+}
+
+.code-block-wrapper pre code {
+    background: none;
+    color: #cdd6f4;
+    padding: 0;
+    border-radius: 0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Fira Code', monospace;
+    font-size: 0.85em;
+    line-height: 1.6;
+}
+
+/* Fallback for bare pre/code (not wrapped) */
+.bot-message pre {
+    background: #1e1e2e;
+    border: 1px solid #313244;
+    border-radius: 8px;
+    padding: 14px 16px;
     overflow-x: auto;
     margin: 12px 0;
 }
 
 .bot-message pre code {
     background: none;
+    color: #cdd6f4;
     padding: 0;
     border-radius: 0;
+    font-size: 0.85em;
+    line-height: 1.6;
 }
 
 /* Lists */
@@ -712,14 +760,7 @@ body {
     padding: 12px 0;
 }
 
-/* Streaming effects for bot messages - typing indicator removed */
-
-.bot.streaming .streaming-text::after {
-    content: '|';
-    color: #3b82f6;
-    animation: blink 1s infinite;
-    margin-left: 2px;
-}
+/* Streaming cursor handled by .streaming-cursor element */
 
 .bot br {
     line-height: 1.6;
@@ -1017,17 +1058,6 @@ body {
         margin-bottom: 0;
     }
 
-    #model-selector label {
-        font-size: 14px;
-    }
-
-    .model-select {
-        font-size: 14px;
-        padding: 6px 10px;
-        min-width: 200px;
-        max-width: 350px;
-    }
-
     #clear-cache-btn {
         height: 40px;
         min-width: 80px;
@@ -1097,21 +1127,6 @@ body {
         flex-direction: column;
         gap: 10px;
         align-items: stretch;
-    }
-
-    #model-selector {
-        justify-content: center;
-    }
-
-    #model-selector label {
-        font-size: 13px;
-    }
-
-    .model-select {
-        font-size: 13px;
-        padding: 6px 8px;
-        min-width: 200px;
-        max-width: 300px;
     }
 
     #clear-data-container {
@@ -1528,60 +1543,6 @@ body {
     font-size: 1.1em !important;
 }
 
-/* Model Configuration Styles */
-.model-select option.recommended-model {
-    background-color: #fef3c7;
-    color: #92400e;
-    font-weight: 500;
-}
-
-.model-select option.recommended-model:hover {
-    background-color: #fde68a;
-}
-
-/* Visual indicator for recommended models */
-.model-select option[data-recommended="true"]::before {
-    content: "⭐ ";
-}
-
-/* Model recommendation indicator */
-.model-recommendation-hint {
-    font-size: 11px;
-    color: #6b7280;
-    margin-top: 4px;
-    text-align: center;
-}
-
-/* Model pricing indicators */
-.model-select option[data-pricing="low"] {
-    color: #059669;
-}
-
-.model-select option[data-pricing="medium"] {
-    color: #d97706;
-}
-
-.model-select option[data-pricing="high"] {
-    color: #dc2626;
-}
-
-/* Model configuration loading state */
-.model-config-loading {
-    opacity: 0.6;
-    pointer-events: none;
-}
-
-.model-config-loading::after {
-    content: ' (Loading...)';
-    font-size: 12px;
-    color: #6b7280;
-}
-
-/* Enhanced model selector */
-#model-selector {
-    position: relative;
-}
-
 /* Chat image styling */
 .chat-image {
     max-width: 100%;
@@ -1630,25 +1591,8 @@ body {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-/* Responsive model selector */
+/* Responsive layout */
 @media (max-width: 768px) {
-    #model-selector {
-        flex-direction: column;
-        text-align: center;
-        gap: 8px;
-    }
-    
-    #model-selector::after {
-        position: static;
-        transform: none;
-        margin-top: 8px;
-    }
-    
-    .model-select {
-        min-width: auto;
-        width: 100%;
-    }
-    
     .chat-image {
         max-height: 250px;
     }

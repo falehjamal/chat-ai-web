@@ -1,237 +1,239 @@
-// Enhanced Markdown and Math Renderer for all modes - ALL FORMATTING IN FRONTEND
+// Enhanced Markdown and Math Renderer for all modes
 class MarkdownMathRenderer {
     constructor() {
-        // Configure marked.js for markdown parsing
-        marked.setOptions({
-            breaks: true,
-            gfm: true,
-            headerIds: false,
-            mangle: false
-        });
+        // Configure marked.js if available (loaded but used as reference)
+        if (window.marked) {
+            marked.setOptions({
+                breaks: true,
+                gfm: true,
+                headerIds: false,
+                mangle: false
+            });
+        }
+        this._renderTimer = null;
     }
 
-    // Main function to render markdown with math - handles ALL formatting
+    // Main function - full render (used after streaming completes)
     render(text) {
         if (!text) return '';
-        
-        console.log('🎨 Frontend processing ALL formatting for text');
-        
-        // Step 1: Clean and normalize text
+
         let processed = this.cleanText(text);
-        
-        // Step 2: Enhanced markdown processing
         processed = this.processMarkdownEnhanced(processed);
-        
-        // Step 3: Apply custom formatting
         processed = this.applyCustomFormatting(processed);
-        
-        console.log('📄 Final HTML content preview:', processed.substring(0, 200) + '...');
-        
+
+        return processed;
+    }
+
+    // Partial render for use DURING streaming (lightweight, no custom formatting)
+    renderPartial(text) {
+        if (!text) return '';
+
+        let processed = this.cleanText(text);
+        processed = this.processMarkdownEnhanced(processed);
+
         return processed;
     }
 
     // Clean and normalize text from backend
     cleanText(text) {
-        let cleaned = text;
-        
-        // Remove any leftover asterisks that aren't part of markdown
-        cleaned = cleaned.trim();
-        
-        // Normalize line breaks and reduce excessive line breaks
+        let cleaned = text.trim();
+
+        // Normalize line breaks
         cleaned = cleaned.replace(/\r\n/g, '\n');
         cleaned = cleaned.replace(/\r/g, '\n');
-        
-        // Reduce multiple consecutive line breaks to maximum 2
+
+        // Reduce excessive line breaks (max 2)
         cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
-        
-        // Clean up multiple spaces
-        cleaned = cleaned.replace(/ {2,}/g, ' ');
-        
+
         // Remove trailing spaces at end of lines
         cleaned = cleaned.replace(/ +$/gm, '');
-        
+
         return cleaned;
     }
 
-    // Enhanced markdown processing while being careful with math expressions
+    // Enhanced markdown processing with math and code block protection
     processMarkdownEnhanced(text) {
         let processed = text;
-        
-        // First, protect math expressions by replacing them with placeholders
-        const mathPlaceholders = [];
-        let mathIndex = 0;
-        
+
+        // === Step 1: Protect special blocks with placeholders ===
+        const placeholders = [];
+        let placeholderIndex = 0;
+
+        const addPlaceholder = (match, type) => {
+            const placeholder = `__PLACEHOLDER_${type}_${placeholderIndex}__`;
+            placeholders[placeholderIndex] = { placeholder, content: match, type };
+            placeholderIndex++;
+            return placeholder;
+        };
+
+        // Protect fenced code blocks FIRST (``` ... ```)
+        processed = processed.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+            const escapedCode = code
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            const langClass = lang ? ` class="language-${lang}"` : '';
+            const langLabel = lang ? `<span class="code-lang">${lang}</span>` : '';
+            const html = `<div class="code-block-wrapper">${langLabel}<button class="code-copy-btn" title="Copy code">📋</button><pre><code${langClass}>${escapedCode}</code></pre></div>`;
+            return addPlaceholder(html, 'CODEBLOCK');
+        });
+
         // Protect display math \[...\] and $$...$$
-        processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, (match) => {
-            const placeholder = `__MATH_DISPLAY_${mathIndex}__`;
-            mathPlaceholders[mathIndex] = match;
-            mathIndex++;
-            return placeholder;
-        });
-        
-        processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (match) => {
-            const placeholder = `__MATH_DISPLAY_${mathIndex}__`;
-            mathPlaceholders[mathIndex] = match;
-            mathIndex++;
-            return placeholder;
-        });
-        
+        processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, (match) => addPlaceholder(match, 'MATHD'));
+        processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (match) => addPlaceholder(match, 'MATHD'));
+
         // Protect inline math \(...\) and $...$
-        processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (match) => {
-            const placeholder = `__MATH_INLINE_${mathIndex}__`;
-            mathPlaceholders[mathIndex] = match;
-            mathIndex++;
-            return placeholder;
+        processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (match) => addPlaceholder(match, 'MATHI'));
+        processed = processed.replace(/\$([^$\n]+?)\$/g, (match) => addPlaceholder(match, 'MATHI'));
+
+        // Protect inline code `code`
+        processed = processed.replace(/`([^`]+?)`/g, (match, code) => {
+            const html = `<code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>`;
+            return addPlaceholder(html, 'ICODE');
         });
-        
-        processed = processed.replace(/\$([^$\n]+?)\$/g, (match) => {
-            const placeholder = `__MATH_INLINE_${mathIndex}__`;
-            mathPlaceholders[mathIndex] = match;
-            mathIndex++;
-            return placeholder;
-        });
-        
-        // Convert headers (multiple levels)
+
+        // === Step 2: Convert markdown syntax to HTML ===
+
+        // Headers
         processed = processed.replace(/^#### (.*?)$/gm, '<h4>$1</h4>');
         processed = processed.replace(/^### (.*?)$/gm, '<h3>$1</h3>');
         processed = processed.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
         processed = processed.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
-        
-        // Convert bold text **text** (now safe from math)
+
+        // Bold
         processed = processed.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
-        
-        // Convert italic text *text* (now safe from math)  
+
+        // Italic
         processed = processed.replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, '<em>$1</em>');
-        
-        // Convert code `code`
-        processed = processed.replace(/`([^`]+?)`/g, '<code>$1</code>');
-        
-        // Convert horizontal rules
+
+        // Strikethrough
+        processed = processed.replace(/~~([^~\n]+?)~~/g, '<del>$1</del>');
+
+        // Horizontal rules
         processed = processed.replace(/^---+$/gm, '<hr>');
         processed = processed.replace(/^\*\*\*+$/gm, '<hr>');
         processed = processed.replace(/^___+$/gm, '<hr>');
-        
-        // Convert lists (both - and * bullets)
+
+        // Links [text](url)
+        processed = processed.replace(/\[([^\]]+?)\]\(([^)]+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+        // Tables (GFM style)
+        processed = this.processTables(processed);
+
+        // Blockquotes
+        processed = processed.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+        // Merge consecutive blockquotes
+        processed = processed.replace(/<\/blockquote>\n<blockquote>/g, '<br>');
+
+        // Bullet lists (- or * or •)
         processed = processed.replace(/^[-*•] (.+)$/gm, '<li>$1</li>');
-        
-        // Group consecutive list items into UL
-        processed = processed.replace(/(<li>.*?<\/li>\s*(?:<li>.*?<\/li>\s*)*)/gs, '<ul>$1</ul>');
-        
-        // Convert numbered lists
+        // Group consecutive <li> into <ul>
+        processed = processed.replace(/((?:<li>.*?<\/li>\s*)+)/gs, '<ul>$1</ul>');
+
+        // Numbered lists
         processed = processed.replace(/^\d+\. (.+)$/gm, '<ol-item>$1</ol-item>');
-        processed = processed.replace(/(<ol-item>.*?<\/ol-item>\s*(?:<ol-item>.*?<\/ol-item>\s*)*)/gs, (match) => {
+        processed = processed.replace(/((?:<ol-item>.*?<\/ol-item>\s*)+)/gs, (match) => {
             const items = match.replace(/<ol-item>(.*?)<\/ol-item>/g, '<li>$1</li>');
             return '<ol>' + items + '</ol>';
         });
-        
-        // Convert blockquotes
-        processed = processed.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
-        
-        // Convert line breaks to paragraphs more carefully
+
+        // === Step 3: Paragraphs ===
         const paragraphs = processed.split(/\n\s*\n/);
         processed = paragraphs.map(paragraph => {
             paragraph = paragraph.trim();
-            if (paragraph) {
-                // Check if it's already HTML element
-                if (paragraph.match(/^<(h[1-6]|hr|ul|ol|blockquote)/)) {
-                    return paragraph;
-                } else {
-                    // Convert single line breaks to <br> within paragraphs
-                    return `<p>${paragraph.replace(/\n/g, '<br>')}</p>`;
-                }
+            if (!paragraph) return '';
+            // Don't wrap block-level elements in <p>
+            if (paragraph.match(/^<(h[1-6]|hr|ul|ol|blockquote|div|pre|table)/)) {
+                return paragraph;
             }
-            return '';
-        }).filter(p => p).join('\n'); // Filter out empty paragraphs and use single \n
-        
-        // Restore math expressions
-        for (let i = 0; i < mathPlaceholders.length; i++) {
-            processed = processed.replace(`__MATH_DISPLAY_${i}__`, mathPlaceholders[i]);
-            processed = processed.replace(`__MATH_INLINE_${i}__`, mathPlaceholders[i]);
+            // Don't wrap code block placeholders
+            if (paragraph.match(/__PLACEHOLDER_CODEBLOCK_\d+__/)) {
+                return paragraph;
+            }
+            return `<p>${paragraph.replace(/\n/g, '<br>')}</p>`;
+        }).filter(p => p).join('\n');
+
+        // === Step 4: Restore all placeholders ===
+        for (let i = 0; i < placeholders.length; i++) {
+            const { placeholder, content, type } = placeholders[i];
+            // For code blocks and inline code, content is already HTML
+            const restoreValue = (type === 'CODEBLOCK' || type === 'ICODE') ? content : content;
+            processed = processed.replace(placeholder, restoreValue);
         }
-        
+
         return processed;
     }
 
-    // Apply custom formatting for specific patterns - ALL REGEX PROCESSING HERE
-    applyCustomFormatting(html) {
-        // Format question type (Jenis soal)
-        html = html.replace(/\*\*Jenis soal:\*\*\s*(.+?)(?=\*\*|$)/gi, '<div class="question-type">📚 Jenis Soal: $1</div>');
-        
-        // Format problem statement (Soal)
-        html = html.replace(/\*\*Soal:\*\*\s*([\s\S]*?)(?=\*\*Langkah|$)/gi, '<div class="problem-statement"><strong>📝 Soal:</strong><br>$1</div>');
-        
-        // Format solution steps header
-        html = html.replace(/\*\*Langkah-langkah penyelesaian:\*\*/gi, '<div class="solution-steps"><h4>🔧 Langkah-langkah Penyelesaian:</h4>');
-        
-        // Format individual steps with numbering
-        let stepCounter = 1;
-        html = html.replace(/^(\d+\.\s+.+?)$/gm, (match, step) => {
-            return `<div class="step-item"><span class="step-number">${stepCounter++}</span>${step.replace(/^\d+\.\s*/, '')}</div>`;
+    // Process GFM-style tables
+    processTables(text) {
+        const tableRegex = /^(\|.+\|)\n(\|[-:\| ]+\|)\n((?:\|.+\|\n?)+)/gm;
+
+        return text.replace(tableRegex, (match, headerRow, separatorRow, bodyRows) => {
+            const alignments = separatorRow.split('|').filter(c => c.trim()).map(cell => {
+                cell = cell.trim();
+                if (cell.startsWith(':') && cell.endsWith(':')) return 'center';
+                if (cell.endsWith(':')) return 'right';
+                return 'left';
+            });
+
+            const headers = headerRow.split('|').filter(c => c.trim()).map(c => c.trim());
+            let html = '<table><thead><tr>';
+            headers.forEach((h, i) => {
+                const align = alignments[i] ? ` style="text-align:${alignments[i]}"` : '';
+                html += `<th${align}>${h}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            const rows = bodyRows.trim().split('\n');
+            rows.forEach(row => {
+                const cells = row.split('|').filter(c => c.trim()).map(c => c.trim());
+                html += '<tr>';
+                cells.forEach((cell, i) => {
+                    const align = alignments[i] ? ` style="text-align:${alignments[i]}"` : '';
+                    html += `<td${align}>${cell}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            return html;
         });
-        
-        // Format final answer with enhanced styling
-        html = html.replace(/\*\*Jawaban akhir:\*\*\s*([\s\S]*?)(?=\*\*Penjelasan|$)/gi, '<div class="final-answer">🎯 Jawaban Akhir: $1</div>');
-        
-        // Format explanation (Penjelasan singkat)
-        html = html.replace(/\*\*Penjelasan singkat:\*\*\s*([\s\S]*?)$/gi, '<div class="explanation-box"><strong>💡 Penjelasan:</strong><br>$1</div>');
-        
+    }
+
+    // Apply custom formatting for specific patterns (math/exam specific)
+    applyCustomFormatting(html) {
         // Format boxed answers (\\boxed{...} and \boxed{...})
         html = html.replace(/\\\\boxed\{([^}]+)\}/g, '<span class="answer-box">$1</span>');
         html = html.replace(/\\boxed\{([^}]+)\}/g, '<span class="answer-box">$1</span>');
-        
-        // Format mathematical choice options (A. B. C. D. E.)
-        html = html.replace(/^([A-E])\.\s*(.+)$/gm, '<div class="choice-option"><strong>$1.</strong> $2</div>');
-        
-        // Format solution steps markers (more comprehensive)
+
+        // Format mathematical choice options (A. B. C. D. E.) — only at line start
+        html = html.replace(/^([A-E])\.\s+(.+)$/gm, '<div class="choice-option"><strong>$1.</strong> $2</div>');
+
+        // Format solution step markers
         html = html.replace(/^(Langkah \d+[:\.].*?)$/gm, '<div class="solution-step"><strong>$1</strong></div>');
         html = html.replace(/^(Step \d+[:\.].*?)$/gm, '<div class="solution-step"><strong>$1</strong></div>');
         html = html.replace(/^(Tahap \d+[:\.].*?)$/gm, '<div class="solution-step"><strong>$1</strong></div>');
-        
-        // Format "Jawaban:" or "Answer:" labels (more flexible)
-        html = html.replace(/^(\*?\*?Jawaban\*?\*?[:\.]?)(.*)$/gmi, '<div class="answer-section"><strong>Jawaban</strong>$2</div>');
-        html = html.replace(/^(\*?\*?Answer\*?\*?[:\.]?)(.*)$/gmi, '<div class="answer-section"><strong>Answer</strong>$2</div>');
-        html = html.replace(/^(\*?\*?Final Answer\*?\*?[:\.]?)(.*)$/gmi, '<div class="answer-section"><strong>Final Answer</strong>$2</div>');
-        
-        // Format "Penyelesaian:" or "Solution:" labels (more flexible)
-        html = html.replace(/^(\*?\*?Penyelesaian\*?\*?[:\.]?)(.*)$/gmi, '<div class="solution-section"><strong>Penyelesaian</strong>$2</div>');
-        html = html.replace(/^(\*?\*?Solution\*?\*?[:\.]?)(.*)$/gmi, '<div class="solution-section"><strong>Solution</strong>$2</div>');
-        html = html.replace(/^(\*?\*?Solusi\*?\*?[:\.]?)(.*)$/gmi, '<div class="solution-section"><strong>Solusi</strong>$2</div>');
-        
-        // Format mathematical equations and expressions
-        html = html.replace(/^(.*=.*[0-9]+.*)$/gm, '<div class="math-equation">$1</div>');
-        
-        // Format "Therefore" and "Jadi" conclusions
+
+        // Format "Jadi" / "Therefore" conclusions
         html = html.replace(/^(Jadi[,:]?\s*.*)$/gmi, '<div class="conclusion"><strong>$1</strong></div>');
         html = html.replace(/^(Therefore[,:]?\s*.*)$/gmi, '<div class="conclusion"><strong>$1</strong></div>');
         html = html.replace(/^(Sehingga[,:]?\s*.*)$/gmi, '<div class="conclusion"><strong>$1</strong></div>');
-        
-        // FINAL CLEANUP - Remove excessive line breaks and spaces
-        html = html.replace(/\n{2,}/g, '\n'); // Reduce multiple line breaks to single
-        html = html.replace(/>\s+</g, '><'); // Remove spaces between HTML tags
-        html = html.replace(/^\s+|\s+$/gm, ''); // Remove leading/trailing spaces from lines
-        
+
         // Clean up empty paragraphs
         html = html.replace(/<p>\s*<\/p>/g, '');
-        html = html.replace(/<p><\/p>/g, '');
-        
+
         return html.trim();
     }
 
     // Render math after DOM update
     renderMath(element) {
         if (window.MathJax && window.MathJax.typesetPromise) {
-            console.log('🧮 Rendering math with MathJax');
-            MathJax.typesetPromise([element]).then(() => {
-                console.log('✅ MathJax rendering completed');
-            }).catch((err) => {
-                console.error('❌ MathJax rendering error:', err);
+            MathJax.typesetPromise([element]).catch((err) => {
+                console.warn('MathJax rendering error:', err);
             });
         } else {
-            console.warn('⚠️ MathJax not available or not ready');
-            // Retry after a short delay
             setTimeout(() => {
                 if (window.MathJax && window.MathJax.typesetPromise) {
-                    MathJax.typesetPromise([element]);
+                    MathJax.typesetPromise([element]).catch(() => {});
                 }
             }, 1000);
         }
@@ -240,5 +242,3 @@ class MarkdownMathRenderer {
 
 // Initialize the renderer
 window.markdownMathRenderer = new MarkdownMathRenderer();
-
-console.log('📝 Simplified Markdown Math Renderer initialized');

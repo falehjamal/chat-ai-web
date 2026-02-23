@@ -1,12 +1,6 @@
 <?php
 // Set timezone to Asia/Jakarta (GMT+7)
 date_default_timezone_set('Asia/Jakarta');
-
-// Include model configuration
-require_once 'model_config.php';
-
-// Get default model for default mode
-$defaultModel = ModelConfig::getDefaultModelForMode('default');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -58,11 +52,6 @@ $defaultModel = ModelConfig::getDefaultModelForMode('default');
     </div>
     
     <div id="chat-controls">
-        <div id="model-selector">
-            <select id="gpt-model" class="model-select">
-                <?= ModelConfig::getHtmlOptions($defaultModel) ?>
-            </select>
-        </div>
         <div id="clear-data-container">
             <button id="clear-cache-btn" class="icon-btn" title="Hapus semua cache dan localStorage">
                 <i data-lucide="database-zap"></i>

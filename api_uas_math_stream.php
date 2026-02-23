@@ -188,7 +188,7 @@ curl_setopt_array($ch, [
                     $content = $decoded['choices'][0]['delta']['content'];
                     $fullResponse .= $content; // Collect full response
                     error_log("OCR High API: Sending content: " . substr($content, 0, 50) . "...");
-                    sendSSE(['content' => $content], 'stream');
+                    sendSSE(['content' => $content, 'full_text' => $fullResponse], 'chunk');
                 } else {
                     error_log("OCR High API: Could not parse JSON or no content: " . $jsonData);
                 }
@@ -237,6 +237,7 @@ if ($result === false) {
     ], 'error');
 } else {
     error_log("OCR High API: Request completed successfully");
+    sendSSE(['type' => 'typing_end', 'full_text' => $fullResponse], 'status');
     sendSSE(['status' => 'completed'], 'complete');
 }
 ?>

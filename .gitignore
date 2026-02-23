@@ -10,6 +10,7 @@ config.env
 # Temporary files
 *.tmp
 *.temp
+*.bak
 
 # OS generated files
 .DS_Store
