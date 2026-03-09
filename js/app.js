@@ -1,8 +1,13 @@
 $(document).ready(async function() {
-    const MAX_HISTORY = 7;
-    
-    // Fixed model — no UI selector needed
-    const selectedModel = 'gpt-5.2';
+    const runtimeConfig = window.modelConfigManager
+        ? await window.modelConfigManager.loadConfig()
+        : (window.APP_RUNTIME_CONFIG || {});
+    const storageKeys = runtimeConfig.localStorageKeys || {
+        default: 'chatHistoryDefault',
+        uas: 'chatHistoryUAS',
+        'uas-math': 'chatHistoryUASMath'
+    };
+    const MAX_HISTORY = ((runtimeConfig.modes && runtimeConfig.modes.default && runtimeConfig.modes.default.historyLimit) || 7);
     
     // Current mode tracking
     let currentMode = 'default';
@@ -14,10 +19,36 @@ $(document).ready(async function() {
         console.log('Tesseract available');
     }
     
+    function getSelectedModel() {
+        if (window.modelConfigManager) {
+            return window.modelConfigManager.getDefaultModelForMode(currentMode);
+        }
+
+        return 'gpt-5.2';
+    }
+
+    function getModeEndpoint(mode) {
+        if (window.modelConfigManager) {
+            const modeConfig = window.modelConfigManager.getModeConfig(mode);
+            if (modeConfig && modeConfig.endpoint) {
+                return modeConfig.endpoint;
+            }
+        }
+
+        switch(mode) {
+            case 'uas':
+                return 'api_uas_stream.php';
+            case 'uas-math':
+                return 'api_uas_math_stream.php';
+            default:
+                return 'api_stream.php';
+        }
+    }
+
     // Load separate chat histories from localStorage
-    let chatHistoryDefault = JSON.parse(localStorage.getItem('chatHistoryDefault')) || [];
-    let chatHistoryUAS = JSON.parse(localStorage.getItem('chatHistoryUAS')) || [];
-    let chatHistoryUASMath = JSON.parse(localStorage.getItem('chatHistoryUASMath')) || [];
+    let chatHistoryDefault = JSON.parse(localStorage.getItem(storageKeys.default)) || [];
+    let chatHistoryUAS = JSON.parse(localStorage.getItem(storageKeys.uas)) || [];
+    let chatHistoryUASMath = JSON.parse(localStorage.getItem(storageKeys['uas-math'])) || [];
     
     // Get current chat history based on mode
     function getCurrentChatHistory() {
@@ -32,13 +63,13 @@ $(document).ready(async function() {
     function saveChatHistory() {
         switch(currentMode) {
             case 'uas':
-                localStorage.setItem('chatHistoryUAS', JSON.stringify(chatHistoryUAS));
+                localStorage.setItem(storageKeys.uas, JSON.stringify(chatHistoryUAS));
                 break;
             case 'uas-math':
-                localStorage.setItem('chatHistoryUASMath', JSON.stringify(chatHistoryUASMath));
+                localStorage.setItem(storageKeys['uas-math'], JSON.stringify(chatHistoryUASMath));
                 break;
             default:
-                localStorage.setItem('chatHistoryDefault', JSON.stringify(chatHistoryDefault));
+                localStorage.setItem(storageKeys.default, JSON.stringify(chatHistoryDefault));
         }
     }
     
@@ -634,7 +665,9 @@ $(document).ready(async function() {
     
     function getRecentHistory() {
         const chatHistory = getCurrentChatHistory();
-        return chatHistory.slice(-MAX_HISTORY);
+        const modeConfig = window.modelConfigManager ? window.modelConfigManager.getModeConfig(currentMode) : null;
+        const historyLimit = (modeConfig && modeConfig.historyLimit) ? modeConfig.historyLimit : MAX_HISTORY;
+        return chatHistory.slice(-historyLimit);
     }
     
     // Auto-resize textarea functionality
@@ -689,18 +722,8 @@ $(document).ready(async function() {
         if (useStreaming) {
             // Use streaming for all modes
             const streamingChat = new StreamingChat();
-            let streamEndpoint;
-            
-            switch(currentMode) {
-                case 'uas':
-                    streamEndpoint = 'api_uas_stream.php';
-                    break;
-                case 'uas-math':
-                    streamEndpoint = 'api_uas_math_stream.php';
-                    break;
-                default:
-                    streamEndpoint = 'api_stream.php';
-            }
+            const streamEndpoint = getModeEndpoint(currentMode);
+            const selectedModel = getSelectedModel();
             
             // For OCR High mode, send image data as well
             if (currentMode === 'uas-math') {
@@ -794,12 +817,12 @@ $(document).ready(async function() {
             
             switch(currentMode) {
                 case 'uas':
-                    apiUrl = 'api_uas_stream.php';
+                    apiUrl = getModeEndpoint('uas');
                     requestData = { 
                         message: userMessage,
                         history: recentHistory,
                         mode: currentMode,
-                        model: selectedModel
+                        model: getSelectedModel()
                     };
                     break;
                 case 'uas-math':
@@ -808,21 +831,21 @@ $(document).ready(async function() {
                         $sendBtn.prop('disabled', false).removeClass('btn-loading');
                         return;
                     }
-                    apiUrl = 'api_uas_math_stream.php';
+                    apiUrl = getModeEndpoint('uas-math');
                     requestData = { 
                         message: userMessage,
                         history: recentHistory,
-                        model: selectedModel,
+                        model: getSelectedModel(),
                         image: currentImage
                     };
                     break;
                 default:
-                    apiUrl = 'api_stream.php';
+                    apiUrl = getModeEndpoint('default');
                     requestData = { 
                         message: userMessage,
                         history: recentHistory,
                         mode: currentMode,
-                        model: selectedModel
+                        model: getSelectedModel()
                     };
             }
 
@@ -908,17 +931,17 @@ $(document).ready(async function() {
                 switch(currentMode) {
                     case 'uas':
                         chatHistoryUAS = [];
-                        localStorage.removeItem('chatHistoryUAS');
+                        localStorage.removeItem(storageKeys.uas);
                         break;
                     case 'uas-math':
                         chatHistoryUASMath = [];
-                        localStorage.removeItem('chatHistoryUASMath');
+                        localStorage.removeItem(storageKeys['uas-math']);
                         // Also clear math images for this mode
                         clearMathImages();
                         break;
                     default:
                         chatHistoryDefault = [];
-                        localStorage.removeItem('chatHistoryDefault');
+                        localStorage.removeItem(storageKeys.default);
                 }
                 
                 // Clear chat display

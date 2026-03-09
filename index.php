@@ -1,13 +1,20 @@
 <?php
-// Set timezone to Asia/Jakarta (GMT+7)
-date_default_timezone_set('Asia/Jakarta');
+
+use App\Core\Env;
+use App\Modules\Chat\Application\ModeConfigResolver;
+
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Boot' . DIRECTORY_SEPARATOR . 'bootstrap.php';
+
+$modeResolver = new ModeConfigResolver();
+$runtimeConfig = $modeResolver->frontendRuntimeConfig();
+$appName = Env::get('APP_NAME', 'Chat AI');
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat AI</title>
+    <title><?= htmlspecialchars($appName) ?></title>
     <link rel="stylesheet" href="css/fonts.css">
     <link rel="stylesheet" href="css/style.css">
     
@@ -97,6 +104,9 @@ date_default_timezone_set('Asia/Jakarta');
     <script src="js/jquery.min.js"></script>
     <script src="js/tesseract.min.js"></script>
     <script src="js/markdown-math.js"></script>
+    <script>
+        window.APP_RUNTIME_CONFIG = <?= json_encode($runtimeConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+    </script>
     <script src="js/model-config.js"></script>
     <script src="js/streaming.js"></script>
     <script src="js/app.js"></script>

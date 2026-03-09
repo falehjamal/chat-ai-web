@@ -1,0 +1,61 @@
+CREATE TABLE IF NOT EXISTS admin_users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    display_name VARCHAR(150) NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_providers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    provider_key VARCHAR(100) NOT NULL UNIQUE,
+    label VARCHAR(150) NOT NULL,
+    driver VARCHAR(100) NOT NULL,
+    base_url VARCHAR(255) NOT NULL,
+    api_key_env_var VARCHAR(100) NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_models (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    provider_id INT NOT NULL,
+    model_key VARCHAR(100) NOT NULL UNIQUE,
+    api_model VARCHAR(150) NOT NULL,
+    label VARCHAR(150) NOT NULL,
+    temperature DECIMAL(4,2) NOT NULL DEFAULT 0.30,
+    max_tokens INT NOT NULL DEFAULT 4096,
+    use_max_completion_tokens TINYINT(1) NOT NULL DEFAULT 1,
+    supports_vision TINYINT(1) NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ai_models_provider FOREIGN KEY (provider_id) REFERENCES ai_providers(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS mode_bindings (
+    mode_key VARCHAR(20) NOT NULL PRIMARY KEY,
+    model_id INT NOT NULL,
+    system_prompt TEXT NOT NULL,
+    history_strategy VARCHAR(50) NOT NULL DEFAULT 'recent_window',
+    history_limit INT NOT NULL DEFAULT 7,
+    accepts_image TINYINT(1) NOT NULL DEFAULT 0,
+    ocr_strategy VARCHAR(50) NOT NULL DEFAULT 'client_extract_text',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_mode_bindings_model FOREIGN KEY (model_id) REFERENCES ai_models(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS settings_audit_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_user_id INT NULL,
+    entity_type VARCHAR(100) NOT NULL,
+    entity_id VARCHAR(100) NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    before_json LONGTEXT NULL,
+    after_json LONGTEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_settings_audit_admin FOREIGN KEY (admin_user_id) REFERENCES admin_users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
