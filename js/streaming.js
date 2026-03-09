@@ -270,7 +270,14 @@ class StreamingChat {
         const $messageDiv = $('<div>').addClass('message bot-message streaming').attr('id', 'streaming-message');
         const $messageContent = $('<div>').addClass('message-content');
 
-        $messageContent.html('<div class="streaming-content"></div><span class="streaming-cursor"></span>');
+        $messageContent.html(`
+            <div class="assistant-response">
+                <div class="assistant-response-body streaming-content"></div>
+                <div class="streaming-indicator">
+                    <span class="streaming-cursor"></span>
+                </div>
+            </div>
+        `);
         $messageDiv.append($messageContent);
         $chatBox.append($messageDiv);
         this.scrollToBottom();
@@ -301,8 +308,12 @@ class StreamingChat {
 
         const $messageContent = this.currentBotMessageElement.find('.message-content');
         $messageContent.html(`
-            ${formattedHtml}
-            <button class="copy-btn" title="Copy response">📋</button>
+            <div class="assistant-response">
+                <div class="assistant-response-body">${formattedHtml}</div>
+                <div class="message-toolbar">
+                    <button class="copy-btn" type="button" title="Copy response">Copy</button>
+                </div>
+            </div>
         `);
 
         // Setup code block copy buttons
@@ -326,9 +337,9 @@ class StreamingChat {
                 const codeText = $(this).closest('.code-block-wrapper').find('code').text();
                 try {
                     await navigator.clipboard.writeText(codeText);
-                    $(this).text('✅').css('background', '#10b981');
+                    $(this).addClass('copied').text('Copied').css('background', '#0f172a');
                     setTimeout(() => {
-                        $(this).text('📋').css('background', '');
+                        $(this).removeClass('copied').text('Copy').css('background', '');
                     }, 2000);
                 } catch (err) {
                     const textArea = document.createElement('textarea');
@@ -354,7 +365,7 @@ class StreamingChat {
             try {
                 await navigator.clipboard.writeText(originalText);
                 const btn = $(this);
-                const originalBtnText = btn.text();
+                const originalBtnText = btn.text() || 'Copy';
                 btn.addClass('copied').text('Copied!').css('background', '#10b981');
                 setTimeout(() => {
                     btn.removeClass('copied').text(originalBtnText).css('background', '');
@@ -370,7 +381,7 @@ class StreamingChat {
                 const btn = $(this);
                 btn.text('Copied!').css('background', '#10b981');
                 setTimeout(() => {
-                    btn.text('📋').css('background', '');
+                    btn.text('Copy').css('background', '');
                 }, 2000);
             }
         });
@@ -409,7 +420,7 @@ class StreamingChat {
             this.currentBotMessageElement.removeAttr('id');
             const $messageContent = this.currentBotMessageElement.find('.message-content');
             $messageContent.html(
-                `<span class="error-message">❌ Error: ${this.escapeHtml(errorMessage)}</span>`
+                `<div class="assistant-response"><div class="assistant-response-body"><span class="error-message">Error: ${this.escapeHtml(errorMessage)}</span></div></div>`
             );
         }
     }

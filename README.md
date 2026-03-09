@@ -58,9 +58,8 @@ DB_PASSWORD=your_db_password
 ### 3. Deploy & Run
 
 1. Upload semua file ke web server
-2. Pastikan folder `tmp/` writable (chmod 755)
-3. Akses website: `http://your-domain.com`
-4. Database table akan dibuat otomatis saat pertama kali digunakan
+2. Akses website: `http://your-domain.com`
+3. Database table dan konfigurasi runtime akan dibuat otomatis dari folder `migrations/`
 
 ### 4. Test
 
@@ -74,16 +73,17 @@ DB_PASSWORD=your_db_password
 ```
 chat-ai-web/
 ├── index.php                    # 🏠 Halaman utama chat
-├── chat_history.php             # 📊 Dashboard history chat (BARU!)
-├── view_chat_history.php        # 👀 Viewer history sederhana
-├── timezone_test.php            # 🕐 Test timezone settings
-├── database.php                 # 💾 Database helper & operations
-├── env_helper.php               # ⚙️ Environment config loader
-├── model_config.php             # 🤖 AI model configurations
+├── chat_history.php             # 📊 Compatibility redirect ke admin history
+├── database.php                 # 💾 Compatibility database adapter
+├── env_helper.php               # ⚙️ Compatibility env adapter
+├── model_config.php             # 🤖 Compatibility model adapter
 ├── config.env                   # 🔐 Konfigurasi utama (buat dari .example)
 ├── config.env.example           # 📋 Template konfigurasi
-├── chat_ai_web.sql              # 🗄️ Database schema
 ├── .htaccess                    # 🔒 Security rules
+├── admin/                       # 🔐 Panel admin runtime config
+├── app/                         # 🧩 Modular monolith internals
+├── migrations/                  # 🗄️ SQL migrations & seed runtime config
+├── views/                       # 🖼️ Page templates
 ├── 
 ├── # API Endpoints
 ├── api_stream.php               # 🔄 API Mode Chat
@@ -100,19 +100,16 @@ chat-ai-web/
 │   ├── streaming.js            # 📡 Streaming functionality
 │   ├── markdown-math.js        # 📝 Markdown & math rendering
 │   ├── jquery.min.js           # 🔧 jQuery library
-│   ├── tesseract.min.js        # 🔍 OCR engine
-│   └── worker.min.js           # 👷 Tesseract worker
-└── tmp/                        # 📂 Temporary files (gambar upload)
+│   └── tesseract.min.js        # 🔍 OCR engine
 ```
 
 ## 🎯 Cara Penggunaan
 
 ### 💬 Mode Chat
 1. **Pilih Mode**: "Mode Chat" di dropdown
-2. **Pilih Model**: GPT-5.2, GPT-5.1, atau GPT-5 Mini
-3. **Chat**: Ketik pesan dan tekan Enter
-4. **Context**: Riwayat chat tersimpan dengan konteks
-5. **Streaming**: Response real-time dari AI
+2. **Chat**: Ketik pesan dan tekan Enter
+3. **Context**: Riwayat chat tersimpan dengan konteks
+4. **Streaming**: Response real-time dari AI
 
 ### 🎓 Mode OCR Low  
 1. **Pilih Mode**: "Mode OCR Low"
@@ -128,8 +125,9 @@ chat-ai-web/
 5. **AI Vision**: GPT Vision menganalisis gambar
 6. **Solution**: Dapatkan langkah penyelesaian detail
 
-### 📊 Chat History Dashboard (BARU!)
-- **URL**: `/chat_history.php`
+### 📊 Chat History Dashboard
+- **URL utama admin**: `/admin/history.php`
+- **Compatibility URL**: `/chat_history.php`
 - **Features**:
   - 📅 Filter berdasarkan tanggal (default 30 hari terakhir)
   - 🔍 Filter berdasarkan IP address dan mode
@@ -201,12 +199,12 @@ php -r "new PDO('mysql:host=localhost;dbname=chat_ai_web', 'user', 'pass');"
 
 ### ❌ File Upload Error
 ```bash
-# Set permission folder tmp
-chmod 755 tmp/
+# Pastikan web server bisa melayani asset frontend dan request upload normal
+# OCR High mengirim gambar langsung sebagai base64, tidak butuh folder tmp
 ```
 
 ### ❌ Timezone Issues
-- Cek `timezone_test.php` untuk verifikasi
+- Cek nilai `APP_TIMEZONE` di `config.env`
 - Pastikan server support timezone Asia/Jakarta
 
 ## 📈 Monitoring & Analytics

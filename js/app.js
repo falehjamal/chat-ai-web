@@ -202,71 +202,6 @@ $(document).ready(async function() {
         $imageInput.val('');
     }
 
-    // Handle image upload specifically for OCR High mode
-    function handleMathImageUpload(imageData) {
-        // Generate unique ID untuk gambar
-        const imageId = Date.now().toString();
-        
-        // Simpan gambar ke localStorage
-        localStorage.setItem(`math_image_${imageId}`, imageData);
-        
-        // Clear thumbnail preview immediately
-        clearImagePreview();
-        
-        // Set current image dan imageId untuk dikirim ke AI
-        currentImage = imageData;
-        currentImageId = imageId;
-        
-        // Note: Jangan tambahkan gambar ke chat di sini, biarkan streaming yang menangani
-        // untuk menghindari duplikasi
-        
-        // Auto-trigger OCR jika user input kosong
-        const userMessage = $userInput.val().trim();
-        if (!userMessage) {
-            // Start OCR process in background
-            performOCRForMathMode(imageData);
-        }
-    }
-
-    // Add image to chat display
-    function addImageToChat(imageData, imageId) {
-        const $messageDiv = $('<div>').addClass('message user-message');
-        const $messageContent = $('<div>').addClass('message-content');
-        
-        // Create image element with metadata
-        const $imageElement = $('<img>')
-            .attr('src', imageData)
-            .attr('alt', 'Soal Matematika')
-            .attr('data-image-id', imageId)
-            .addClass('chat-image')
-            .css({
-                'max-width': '100%',
-                'max-height': '300px',
-                'border-radius': '8px',
-                'margin': '10px 0',
-                'cursor': 'pointer'
-            });
-        
-        // Add click to enlarge functionality
-        $imageElement.on('click', function() {
-            openImageModal(imageData);
-        });
-        
-        const $imageInfo = $('<div>')
-            .addClass('image-info')
-            .html('<small style="color: #666; font-style: italic;">📷 Gambar soal matematika dikirim</small>');
-        
-        const $timestamp = $('<div>')
-            .addClass('message-time')
-            .text(new Date().toLocaleTimeString('id-ID', { hour12: false }));
-        
-        $messageContent.append($imageElement).append($imageInfo);
-        $messageDiv.append($messageContent).append($timestamp);
-        $chatBox.append($messageDiv);
-        
-        scrollToBottom();
-    }
-
     // Open image in modal for better viewing
     function openImageModal(imageData) {
         // Create modal if it doesn't exist
@@ -373,62 +308,6 @@ $(document).ready(async function() {
     // Cleanup old images on page load
     cleanupOldImages();
 
-    // OCR processing specifically for OCR High mode
-    async function performOCRForMathMode(imageData) {
-        try {
-            showOCRProgress();
-            
-            // Check if Tesseract is available
-            if (typeof Tesseract === 'undefined') {
-                console.warn('Tesseract tidak tersedia, melanjutkan tanpa OCR');
-                hideOCRProgress();
-                return;
-            }
-
-            const worker = Tesseract.createWorker({
-                logger: m => {
-                    if (m.status) {
-                        $progressText.text(getProgressMessage(m.status));
-                    }
-                    
-                    if (m.progress !== undefined) {
-                        const percentage = Math.round(m.progress * 100);
-                        $progressFill.css('width', percentage + '%');
-                        $progressPercentage.text(percentage + '%');
-                    }
-                }
-            });
-
-            await worker.load();
-            await worker.loadLanguage('ind+eng');
-            await worker.initialize('ind+eng');
-            
-            const { data: { text } } = await worker.recognize(imageData);
-            await worker.terminate();
-
-            hideOCRProgress();
-            
-            // Clean up extracted text
-            const cleanText = text.trim()
-                .replace(/\n{3,}/g, '\n\n')
-                .replace(/[ \t]+$/gm, '');
-            
-            if (cleanText) {
-                $userInput.val(cleanText);
-                autoResizeTextarea($userInput);
-                $userInput.focus();
-                
-                // Optional: Auto-send jika OCR berhasil
-                // setTimeout(() => sendMessage(), 1000);
-            }
-
-        } catch (error) {
-            hideOCRProgress();
-            console.error('OCR Error:', error);
-            // Don't show alert in OCR High mode, just log the error
-        }
-    }
-
     function displayChatHistory() {
         $chatBox.empty();
         const chatHistory = getCurrentChatHistory();
@@ -441,29 +320,17 @@ $(document).ready(async function() {
             if (msg.sender === 'bot') {
                 $messageDiv.addClass('bot-message');
                 
-                // Format text untuk bot messages
                 const formattedText = formatBotMessage(msg.text);
+                const timestamp = msg.timestamp
+                    ? new Date(msg.timestamp).toLocaleTimeString('id-ID', { hour12: false })
+                    : '';
+
+                $messageContent.html(buildBotMessageHtml(formattedText, timestamp));
                 
-                // Add copy button for bot messages
-                const messageWithCopyBtn = `
-                    ${formattedText}
-                    <button class="copy-btn" title="Copy response">📋</button>
-                `;
-                
-                $messageContent.html(messageWithCopyBtn);
-                
-                // Setup copy functionality for this message
                 setupCopyButtonForMessage($messageDiv, msg.text);
                 
-                // Render math if available
                 if (window.markdownMathRenderer) {
                     markdownMathRenderer.renderMath($messageDiv[0]);
-                }
-                
-                // Add timestamp if available
-                if (msg.timestamp) {
-                    const timestamp = new Date(msg.timestamp).toLocaleTimeString('id-ID', { hour12: false });
-                    $messageContent.append(`<div class="timestamp">${timestamp}</div>`);
                 }
             } else {
                 $messageDiv.addClass('user-message');
@@ -515,7 +382,22 @@ $(document).ready(async function() {
         scrollToBottom();
     }
     
-    // Setup copy button functionality for a message
+    function buildBotMessageHtml(formattedText, timestampText) {
+        const metaHtml = timestampText
+            ? `<div class="message-meta">${timestampText}</div>`
+            : '';
+
+        return `
+            <div class="assistant-response">
+                <div class="assistant-response-body">${formattedText}</div>
+                <div class="message-toolbar">
+                    <button class="copy-btn" type="button" title="Copy response">Copy</button>
+                    ${metaHtml}
+                </div>
+            </div>
+        `;
+    }
+
     function setupCopyButtonForMessage(messageElement, originalText) {
         const copyBtn = messageElement.find('.copy-btn');
         
@@ -528,7 +410,7 @@ $(document).ready(async function() {
                 
                 // Visual feedback
                 const btn = $(this);
-                const originalBtnText = btn.text();
+                const originalBtnText = btn.text() || 'Copy';
                 
                 btn.addClass('copied')
                    .text('Copied!')
@@ -555,7 +437,7 @@ $(document).ready(async function() {
                 const btn = $(this);
                 btn.text('Copied!').css('background', '#10b981');
                 setTimeout(() => {
-                    btn.text('📋 Copy').css('background', '');
+                    btn.text('Copy').css('background', '');
                 }, 2000);
             }
         });

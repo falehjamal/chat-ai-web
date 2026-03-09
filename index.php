@@ -28,8 +28,17 @@ $appName = Env::get('APP_NAME', 'Chat AI');
             tex: {
                 inlineMath: [['\\(', '\\)'], ['$', '$']],
                 displayMath: [['\\[', '\\]'], ['$$', '$$']],
+                packages: {'[+]': ['ams', 'noerrors', 'noundefined']},
                 processEscapes: true,
                 processEnvironments: true
+            },
+            startup: {
+                typeset: false
+            },
+            chtml: {
+                scale: 1,
+                mtextInheritFont: true,
+                displayAlign: 'center'
             },
             options: {
                 skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
