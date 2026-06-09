@@ -29,16 +29,19 @@
             <div>
                 <label for="temperature">Temperature</label>
                 <input type="number" step="0.1" min="0" max="2" id="temperature" name="temperature" required value="<?= htmlspecialchars($editingModel['temperature'] ?? '0.3') ?>">
+                <p class="muted" style="margin-top: 6px; font-size: 13px;">Model reasoning (gpt-5.x, o-series) tidak mendukung temperature — nilai ini diabaikan otomatis oleh provider.</p>
             </div>
             <div>
                 <label for="max_tokens">Max Tokens</label>
                 <input type="number" min="1" id="max_tokens" name="max_tokens" required value="<?= htmlspecialchars($editingModel['max_tokens'] ?? '4096') ?>">
+                <p class="muted" style="margin-top: 6px; font-size: 13px;">Untuk model reasoning, gunakan 8192–16384 agar token reasoning tidak habis sebelum jawaban muncul.</p>
             </div>
             <div>
                 <label>
                     <input type="checkbox" name="use_max_completion_tokens" value="1" <?= !isset($editingModel['use_max_completion_tokens']) || !empty($editingModel['use_max_completion_tokens']) ? 'checked' : '' ?>>
                     Gunakan `max_completion_tokens`
                 </label>
+                <p class="muted" style="margin-top: 6px; font-size: 13px;">Wajib aktif untuk model reasoning (gpt-5.x, o-series). `max_tokens` tidak kompatibel dengan model tersebut.</p>
             </div>
             <div>
                 <label>

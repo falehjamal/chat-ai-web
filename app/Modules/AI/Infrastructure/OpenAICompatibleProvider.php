@@ -122,18 +122,39 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
         return stripos($apiModel, '-pro') !== false || stripos($apiModel, 'codex') !== false;
     }
 
+    private function isReasoningModel($apiModel)
+    {
+        $model = strtolower(trim($apiModel));
+
+        if (strpos($model, 'gpt-5-chat') !== false) {
+            return false;
+        }
+
+        return (bool) preg_match('/^(o[134]|gpt-5)/', $model);
+    }
+
+    private function supportsTemperature($apiModel)
+    {
+        return !$this->isReasoningModel($apiModel);
+    }
+
     private function buildChatCompletionsPayload(array $modeConfig, array $messages)
     {
         $payload = [
             'model' => $modeConfig['apiModel'],
             'messages' => $messages,
             'stream' => true,
-            'temperature' => (float) $modeConfig['temperature'],
         ];
+
+        if ($this->supportsTemperature($modeConfig['apiModel'])) {
+            $payload['temperature'] = (float) $modeConfig['temperature'];
+        }
 
         if (!empty($modeConfig['useMaxCompletionTokens'])) {
             $payload['max_completion_tokens'] = (int) $modeConfig['maxTokens'];
-            $payload['reasoning_effort'] = 'high';
+            if ($this->isReasoningModel($modeConfig['apiModel'])) {
+                $payload['reasoning_effort'] = 'high';
+            }
         } else {
             $payload['max_tokens'] = (int) $modeConfig['maxTokens'];
         }
@@ -150,7 +171,7 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
             'max_output_tokens' => (int) $modeConfig['maxTokens'],
         ];
 
-        if (!empty($modeConfig['useMaxCompletionTokens'])) {
+        if (!empty($modeConfig['useMaxCompletionTokens']) && $this->isReasoningModel($modeConfig['apiModel'])) {
             $payload['reasoning'] = ['effort' => 'high'];
         }
 
