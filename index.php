@@ -53,11 +53,11 @@ $appName = Env::get('APP_NAME', 'Chat AI');
 </head>
 <body>
     <div id="mode-selector">
-        <button id="mode-default" class="mode-btn active">
+        <button id="mode-default" class="mode-btn" style="display: none;">
             <i data-lucide="message-circle"></i>
             <span>Chat</span>
         </button>
-        <button id="mode-uas" class="mode-btn">
+        <button id="mode-uas" class="mode-btn active">
             <i data-lucide="scan-text"></i>
             <span>OCR Low</span>
         </button>

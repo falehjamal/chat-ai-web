@@ -10,7 +10,7 @@ $(document).ready(async function() {
     const MAX_HISTORY = ((runtimeConfig.modes && runtimeConfig.modes.default && runtimeConfig.modes.default.historyLimit) || 7);
     
     // Current mode tracking
-    let currentMode = 'default';
+    let currentMode = 'uas';
     let currentImage = null;
     let currentImageId = null;
     
@@ -123,6 +123,7 @@ $(document).ready(async function() {
     displayChatHistory();
     autoResizeTextarea($userInput);
     updateModeButtons();
+    $userInput.focus();
     
     function updateModeButtons() {
         $modeDefault.toggleClass('active', currentMode === 'default');
@@ -861,7 +862,7 @@ $(document).ready(async function() {
                 $chatBox.empty();
                 
                 // Reset to default mode
-                currentMode = 'default';
+                currentMode = 'uas';
                 updateModeButtons();
                 
                 // Show success message
@@ -916,7 +917,7 @@ Lanjutkan?`;
                 $chatBox.empty();
                 
                 // Reset to default mode
-                currentMode = 'default';
+                currentMode = 'uas';
                 currentImage = null;
                 
                 // Reset UI

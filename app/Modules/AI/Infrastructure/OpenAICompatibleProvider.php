@@ -17,23 +17,17 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
             throw new Exception('API key provider tidak dikonfigurasi dengan benar pada env `' . $apiKeyEnvVar . '`.');
         }
 
-        $payload = [
-            'model' => $modeConfig['apiModel'],
-            'messages' => $messages,
-            'stream' => true,
-            'temperature' => (float) $modeConfig['temperature'],
-        ];
+        $useResponsesApi = $this->requiresResponsesApi($modeConfig['apiModel']);
+        $payload = $useResponsesApi
+            ? $this->buildResponsesPayload($modeConfig, $messages)
+            : $this->buildChatCompletionsPayload($modeConfig, $messages);
 
-        if (!empty($modeConfig['useMaxCompletionTokens'])) {
-            $payload['max_completion_tokens'] = (int) $modeConfig['maxTokens'];
-        } else {
-            $payload['max_tokens'] = (int) $modeConfig['maxTokens'];
-        }
+        $endpoint = $useResponsesApi ? '/responses' : '/chat/completions';
+        $url = rtrim($modeConfig['providerBaseUrl'], '/') . $endpoint;
 
         $fullResponse = '';
         $rawApiResponse = '';
         $done = false;
-        $url = rtrim($modeConfig['providerBaseUrl'], '/') . '/chat/completions';
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -43,9 +37,16 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
             'Content-Type: application/json',
             'User-Agent: ChatAI-Web/3.0',
         ]);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 120);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (&$fullResponse, &$rawApiResponse, &$done, $onChunk, $onComplete) {
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (
+            &$fullResponse,
+            &$rawApiResponse,
+            &$done,
+            $useResponsesApi,
+            $onChunk,
+            $onComplete
+        ) {
             if (strlen($rawApiResponse) < 50000) {
                 $rawApiResponse .= $chunk;
             }
@@ -57,22 +58,27 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
                     continue;
                 }
 
-                $payload = trim(substr($line, 6));
-                if ($payload === '[DONE]') {
+                $data = trim(substr($line, 6));
+                if (!$useResponsesApi && $data === '[DONE]') {
                     $done = true;
                     $onComplete($fullResponse);
                     continue;
                 }
 
-                $json = json_decode($payload, true);
+                $json = json_decode($data, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     continue;
                 }
 
-                if (isset($json['choices'][0]['delta']['content'])) {
-                    $content = $json['choices'][0]['delta']['content'];
+                $content = $this->extractStreamDelta($json, $useResponsesApi);
+                if ($content !== null && $content !== '') {
                     $fullResponse .= $content;
                     $onChunk($content, $fullResponse);
+                }
+
+                if ($useResponsesApi && ($json['type'] ?? '') === 'response.completed') {
+                    $done = true;
+                    $onComplete($fullResponse);
                 }
             }
 
@@ -109,5 +115,117 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
         }
 
         return $fullResponse;
+    }
+
+    private function requiresResponsesApi($apiModel)
+    {
+        return stripos($apiModel, '-pro') !== false || stripos($apiModel, 'codex') !== false;
+    }
+
+    private function buildChatCompletionsPayload(array $modeConfig, array $messages)
+    {
+        $payload = [
+            'model' => $modeConfig['apiModel'],
+            'messages' => $messages,
+            'stream' => true,
+            'temperature' => (float) $modeConfig['temperature'],
+        ];
+
+        if (!empty($modeConfig['useMaxCompletionTokens'])) {
+            $payload['max_completion_tokens'] = (int) $modeConfig['maxTokens'];
+            $payload['reasoning_effort'] = 'high';
+        } else {
+            $payload['max_tokens'] = (int) $modeConfig['maxTokens'];
+        }
+
+        return $payload;
+    }
+
+    private function buildResponsesPayload(array $modeConfig, array $messages)
+    {
+        $payload = [
+            'model' => $modeConfig['apiModel'],
+            'input' => $this->normalizeMessagesForResponsesApi($messages),
+            'stream' => true,
+            'max_output_tokens' => (int) $modeConfig['maxTokens'],
+        ];
+
+        if (!empty($modeConfig['useMaxCompletionTokens'])) {
+            $payload['reasoning'] = ['effort' => 'high'];
+        }
+
+        return $payload;
+    }
+
+    private function normalizeMessagesForResponsesApi(array $messages)
+    {
+        $normalized = [];
+
+        foreach ($messages as $message) {
+            if (!is_array($message) || !isset($message['role'])) {
+                continue;
+            }
+
+            $content = $message['content'] ?? '';
+            if (!is_array($content)) {
+                $normalized[] = [
+                    'role' => $message['role'],
+                    'content' => $content,
+                ];
+                continue;
+            }
+
+            $blocks = [];
+            foreach ($content as $block) {
+                if (!is_array($block) || !isset($block['type'])) {
+                    continue;
+                }
+
+                if ($block['type'] === 'text' && isset($block['text'])) {
+                    $blocks[] = [
+                        'type' => 'input_text',
+                        'text' => $block['text'],
+                    ];
+                    continue;
+                }
+
+                if ($block['type'] === 'image_url' && isset($block['image_url']['url'])) {
+                    $imageBlock = [
+                        'type' => 'input_image',
+                        'image_url' => $block['image_url']['url'],
+                    ];
+
+                    if (!empty($block['image_url']['detail'])) {
+                        $imageBlock['detail'] = $block['image_url']['detail'];
+                    }
+
+                    $blocks[] = $imageBlock;
+                }
+            }
+
+            $normalized[] = [
+                'role' => $message['role'],
+                'content' => $blocks,
+            ];
+        }
+
+        return $normalized;
+    }
+
+    private function extractStreamDelta(array $json, $useResponsesApi)
+    {
+        if ($useResponsesApi) {
+            if (($json['type'] ?? '') === 'response.output_text.delta' && isset($json['delta'])) {
+                return $json['delta'];
+            }
+
+            return null;
+        }
+
+        if (isset($json['choices'][0]['delta']['content'])) {
+            return $json['choices'][0]['delta']['content'];
+        }
+
+        return null;
     }
 }
