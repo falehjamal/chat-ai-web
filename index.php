@@ -7,7 +7,7 @@ require_once __DIR__ . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Boot
 
 $modeResolver = new ModeConfigResolver();
 $runtimeConfig = $modeResolver->frontendRuntimeConfig();
-$appName = Env::get('APP_NAME', 'Chat AI');
+$appName = Env::get('APP_NAME', 'Faleh AI');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -15,6 +15,9 @@ $appName = Env::get('APP_NAME', 'Chat AI');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($appName) ?></title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
     <link rel="stylesheet" href="css/fonts.css">
     <link rel="stylesheet" href="css/style.css">
     
