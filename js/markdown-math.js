@@ -26,8 +26,8 @@ class MarkdownMathRenderer {
         }
 
         const normalized = this.cleanText(text);
-        const bundle = this.extractPlaceholders(normalized);
-        const markdown = this.escapeHtml(bundle.text);
+        const bundle = this.extractPlaceholders(normalized, isPartial);
+        const markdown = this.escapeForMarkdown(bundle.text);
         let html = this.parseMarkdown(markdown);
         html = this.unwrapBlockPlaceholders(html, bundle.placeholders);
         html = this.restorePlaceholders(html, bundle.placeholders);
@@ -46,7 +46,7 @@ class MarkdownMathRenderer {
         return cleaned;
     }
 
-    extractPlaceholders(text) {
+    extractPlaceholders(text, isPartial) {
         const placeholders = [];
         let index = 0;
         let processed = text;
@@ -61,6 +61,12 @@ class MarkdownMathRenderer {
         processed = processed.replace(/```([^\n`]*)\n([\s\S]*?)```/g, (_match, language, code) => {
             return store(this.renderCodeBlock(language, code), 'CODEBLOCK', true);
         });
+
+        if (isPartial) {
+            processed = processed.replace(/```([^\n`]*)\n?([\s\S]*)$/, (_match, language, code) => {
+                return store(this.renderCodeBlock(language, code), 'CODEBLOCK', true);
+            });
+        }
 
         processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, (match) => {
             return store(`<div class="math-block">${match}</div>`, 'DISPLAY_MATH', true);
@@ -205,6 +211,15 @@ class MarkdownMathRenderer {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
+    }
+
+    // Escape only HTML-structural characters before markdown parsing.
+    // Keeps `>` intact so Markdown blockquotes are recognized; escaping `<`
+    // still prevents raw HTML tags from forming, preserving XSS safety.
+    escapeForMarkdown(text) {
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;');
     }
 
     escapeRegExp(text) {

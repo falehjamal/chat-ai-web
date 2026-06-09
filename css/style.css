@@ -1714,9 +1714,23 @@ body {
 }
 
 .assistant-response-body blockquote {
-    border-left: 3px solid #d1d5db;
-    padding-left: 1rem;
-    color: #4b5563;
+    border-left: 3px solid #93c5fd;
+    background: #f8fafc;
+    border-radius: 0 8px 8px 0;
+    padding: 0.6rem 1rem;
+    color: #475569;
+}
+
+.assistant-response-body blockquote p {
+    margin: 0.35rem 0;
+}
+
+.assistant-response-body blockquote > *:first-child {
+    margin-top: 0;
+}
+
+.assistant-response-body blockquote > *:last-child {
+    margin-bottom: 0;
 }
 
 .assistant-response-body a {
