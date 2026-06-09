@@ -111,7 +111,7 @@ $appName = Env::get('APP_NAME', 'Chat AI');
 
     <!-- Local JavaScript Files -->
     <script src="js/jquery.min.js"></script>
-    <script src="js/tesseract.min.js"></script>
+    <script src="js/tesseract/tesseract.min.js"></script>
     <script src="js/markdown-math.js"></script>
     <script>
         window.APP_RUNTIME_CONFIG = <?= json_encode($runtimeConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;

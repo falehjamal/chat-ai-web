@@ -18,6 +18,90 @@ $(document).ready(async function() {
     if (typeof Tesseract !== 'undefined') {
         console.log('Tesseract available');
     }
+
+    const TESSERACT_BASE = 'js/tesseract';
+    let ocrWorker = null;
+    let ocrWorkerInitPromise = null;
+
+    function preprocessImageForOCR(imageData) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = function() {
+                const minWidth = 1500;
+                let width = img.width;
+                let height = img.height;
+
+                if (width < minWidth) {
+                    const scale = minWidth / width;
+                    width = Math.round(width * scale);
+                    height = Math.round(height * scale);
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+                ctx.drawImage(img, 0, 0, width, height);
+                const imageDataObj = ctx.getImageData(0, 0, width, height);
+                const data = imageDataObj.data;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+                    data[i] = gray;
+                    data[i + 1] = gray;
+                    data[i + 2] = gray;
+                }
+
+                ctx.putImageData(imageDataObj, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            };
+            img.onerror = () => reject(new Error('Gagal memuat gambar untuk preprocessing'));
+            img.src = imageData;
+        });
+    }
+
+    async function getOcrWorker() {
+        if (ocrWorker) {
+            return ocrWorker;
+        }
+
+        if (ocrWorkerInitPromise) {
+            return ocrWorkerInitPromise;
+        }
+
+        if (typeof Tesseract === 'undefined') {
+            throw new Error('Tesseract is not available');
+        }
+
+        ocrWorkerInitPromise = Tesseract.createWorker('ind+eng', 1, {
+            workerPath: `${TESSERACT_BASE}/worker.min.js`,
+            corePath: `${TESSERACT_BASE}/core`,
+            langPath: `${TESSERACT_BASE}/lang`,
+            logger: m => {
+                if (m.status) {
+                    $progressText.text(getProgressMessage(m.status));
+                }
+
+                if (m.progress !== undefined) {
+                    const percentage = Math.round(m.progress * 100);
+                    $progressFill.css('width', percentage + '%');
+                    $progressPercentage.text(percentage + '%');
+                }
+            }
+        }).then(async (worker) => {
+            await worker.setParameters({
+                tessedit_pageseg_mode: Tesseract.PSM.AUTO
+            });
+            ocrWorker = worker;
+            return worker;
+        }).catch((error) => {
+            ocrWorkerInitPromise = null;
+            throw error;
+        });
+
+        return ocrWorkerInitPromise;
+    }
     
     function getSelectedModel() {
         if (window.modelConfigManager) {
@@ -483,34 +567,9 @@ $(document).ready(async function() {
         try {
             showOCRProgress();
 
-            // Check if Tesseract is available
-            if (typeof Tesseract === 'undefined') {
-                throw new Error('Tesseract is not available');
-            }
-
-            // Use createWorker approach for v2.1.5
-            const worker = Tesseract.createWorker({
-                logger: m => {
-                    // Update progress berdasarkan status
-                    if (m.status) {
-                        $progressText.text(getProgressMessage(m.status));
-                    }
-                    
-                    // Update progress bar jika ada progress
-                    if (m.progress !== undefined) {
-                        const percentage = Math.round(m.progress * 100);
-                        $progressFill.css('width', percentage + '%');
-                        $progressPercentage.text(percentage + '%');
-                    }
-                }
-            });
-
-            await worker.load();
-            await worker.loadLanguage('ind+eng');
-            await worker.initialize('ind+eng');
-            
-            const { data: { text } } = await worker.recognize(imageData);
-            await worker.terminate();
+            const worker = await getOcrWorker();
+            const processedImage = await preprocessImageForOCR(imageData);
+            const { data: { text } } = await worker.recognize(processedImage);
 
             hideOCRProgress();
             
