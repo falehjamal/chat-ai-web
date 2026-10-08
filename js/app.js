@@ -108,7 +108,7 @@ $(document).ready(async function() {
             return window.modelConfigManager.getDefaultModelForMode(currentMode);
         }
 
-        return 'gpt-5.2';
+        return 'cu/gpt-5.2';
     }
 
     function getModeEndpoint(mode) {

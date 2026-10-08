@@ -55,7 +55,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
 View::render('admin/modes', [
     'pageTitle' => 'Mode Bindings',
-    'pageSubtitle' => 'Map tiap mode publik ke provider, model, prompt, dan policy runtime.',
+    'pageSubtitle' => 'Setiap mode publik memakai model dari katalog 9router.',
     'currentPage' => 'modes',
     'currentUser' => $currentUser,
     'csrfToken' => Csrf::token(),

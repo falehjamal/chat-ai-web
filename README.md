@@ -78,7 +78,8 @@ sudo nano .env
 Isi minimal:
 
 ```env
-OPENAI_API_KEY=sk-your-openai-api-key-here
+NINEROUTER_URL=http://127.0.0.1:20128/v1
+NINEROUTER_KEY=sk-your-9router-key
 
 DB_HOST=localhost
 DB_PORT=3306
@@ -134,7 +135,7 @@ Nginx tidak membaca `.htaccess`. Jika production memakai Nginx, tolak akses ke `
 2. Buka `http://chat-ai-web.example.com/admin/setup.php` — buat akun admin pertama (hanya sekali)
 3. Login admin: `http://chat-ai-web.example.com/admin/login.php`
 
-Tabel database dibuat **otomatis** dari folder `migrations/` saat aplikasi pertama kali diakses.
+Saat pertama kali dibuka, aplikasi menjalankan `migrations/` lalu mengisi katalog model dari 9router. Tidak perlu mengimpor file SQL terpisah.
 
 ---
 
@@ -194,7 +195,7 @@ echo 'OK';
 - Hard refresh browser (Ctrl+Shift+R)
 
 **API key invalid**
-- Cek `OPENAI_API_KEY` di `.env` (tanpa tanda kutip)
+- Cek `NINEROUTER_URL` dan `NINEROUTER_KEY` di `.env` (tanpa tanda kutip)
 - Pastikan quota OpenAI masih tersedia
 
 **Permission denied**

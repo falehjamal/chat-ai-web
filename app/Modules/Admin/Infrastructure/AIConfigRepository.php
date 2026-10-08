@@ -118,7 +118,7 @@ class AIConfigRepository
 
     public function saveModel(array $payload)
     {
-        $payload['model_key'] = $this->normalizeKey($payload['model_key'] ?? '');
+        $payload['model_key'] = $this->normalizeModelKey($payload['model_key'] ?? '');
 
         if (!empty($payload['id'])) {
             $stmt = $this->pdo->prepare(
@@ -257,5 +257,12 @@ class AIConfigRepository
         $value = strtolower(trim($value));
         $value = preg_replace('/[^a-z0-9\-_.]+/', '-', $value);
         return trim($value, '-');
+    }
+
+    private function normalizeModelKey($value)
+    {
+        $value = trim($value);
+        $value = preg_replace('/[^A-Za-z0-9\-_.\/]+/', '', $value);
+        return trim($value, '/');
     }
 }

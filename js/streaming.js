@@ -10,7 +10,7 @@ class StreamingChat {
     }
 
     // Send message with streaming response for math mode with optional image
-    sendMathMessageWithStreaming(message, chatHistory, endpoint = 'api_uas_math_stream.php', model = 'gpt-5.2', imageBase64 = null, onComplete = null, skipUserMessage = false) {
+    sendMathMessageWithStreaming(message, chatHistory, endpoint = 'api_uas_math_stream.php', model = 'cu/gpt-5.2', imageBase64 = null, onComplete = null, skipUserMessage = false) {
         if (this.isStreaming) return;
 
         this.isStreaming = true;
@@ -37,7 +37,7 @@ class StreamingChat {
     }
 
     // Send message with streaming response
-    sendMessageWithStreaming(message, chatHistory, endpoint = 'api_stream.php', model = 'gpt-5.2', onComplete = null) {
+    sendMessageWithStreaming(message, chatHistory, endpoint = 'api_stream.php', model = 'cu/gpt-5.2', onComplete = null) {
         if (this.isStreaming) return;
 
         this.isStreaming = true;

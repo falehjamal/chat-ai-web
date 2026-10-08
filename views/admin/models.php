@@ -1,4 +1,14 @@
 <div class="panel">
+    <h2 style="margin-top: 0;">Katalog 9router</h2>
+    <p class="muted">Menghapus model lama lalu mengisi ulang dari <code>GET /v1/models</code> di 9router lokal. Binding mode tetap memakai prompt yang sudah ada.</p>
+    <form method="post">
+        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken) ?>">
+        <input type="hidden" name="action" value="sync">
+        <button type="submit" class="btn">Sinkronkan dari 9router</button>
+    </form>
+</div>
+
+<div class="panel">
     <h2 style="margin-top: 0;"><?= !empty($editingModel) ? 'Edit Model' : 'Tambah Model' ?></h2>
     <form method="post">
         <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken) ?>">
@@ -29,19 +39,19 @@
             <div>
                 <label for="temperature">Temperature</label>
                 <input type="number" step="0.1" min="0" max="2" id="temperature" name="temperature" required value="<?= htmlspecialchars($editingModel['temperature'] ?? '0.3') ?>">
-                <p class="muted" style="margin-top: 6px; font-size: 13px;">Model reasoning (gpt-5.x, o-series) tidak mendukung temperature — nilai ini diabaikan otomatis oleh provider.</p>
+                <p class="muted" style="margin-top: 6px; font-size: 13px;">Dikirim ke 9router sebagai temperature pada /v1/chat/completions.</p>
             </div>
             <div>
                 <label for="max_tokens">Max Tokens</label>
                 <input type="number" min="1" id="max_tokens" name="max_tokens" required value="<?= htmlspecialchars($editingModel['max_tokens'] ?? '4096') ?>">
-                <p class="muted" style="margin-top: 6px; font-size: 13px;">Untuk model reasoning, gunakan 8192–16384 agar token reasoning tidak habis sebelum jawaban muncul.</p>
+                <p class="muted" style="margin-top: 6px; font-size: 13px;">Dikirim sebagai max_tokens. Nilai katalog 9router dibatasi 16384 saat sinkronisasi.</p>
             </div>
             <div>
                 <label>
-                    <input type="checkbox" name="use_max_completion_tokens" value="1" <?= !isset($editingModel['use_max_completion_tokens']) || !empty($editingModel['use_max_completion_tokens']) ? 'checked' : '' ?>>
+                    <input type="checkbox" name="use_max_completion_tokens" value="1" <?= !empty($editingModel['use_max_completion_tokens']) ? 'checked' : '' ?>>
                     Gunakan `max_completion_tokens`
                 </label>
-                <p class="muted" style="margin-top: 6px; font-size: 13px;">Wajib aktif untuk model reasoning (gpt-5.x, o-series). `max_tokens` tidak kompatibel dengan model tersebut.</p>
+                <p class="muted" style="margin-top: 6px; font-size: 13px;">Biarkan nonaktif untuk 9router. Router lokal memakai max_tokens, bukan max_completion_tokens.</p>
             </div>
             <div>
                 <label>
@@ -65,6 +75,7 @@
 
 <div class="panel">
     <h2 style="margin-top: 0;">Daftar Model</h2>
+    <input type="search" id="model-filter" placeholder="Cari model 9router..." style="width: 100%; margin-bottom: 12px;">
     <table>
         <thead>
         <tr>
@@ -79,7 +90,7 @@
         </thead>
         <tbody>
         <?php foreach ($models as $model): ?>
-            <tr>
+            <tr data-model="<?= htmlspecialchars(strtolower($model['model_key'])) ?>">
                 <td><?= htmlspecialchars($model['model_key']) ?></td>
                 <td><?= htmlspecialchars($model['provider_label']) ?></td>
                 <td><?= htmlspecialchars($model['api_model']) ?></td>
@@ -92,3 +103,11 @@
         </tbody>
     </table>
 </div>
+<script>
+document.getElementById('model-filter').addEventListener('input', function () {
+    var query = this.value.toLowerCase();
+    document.querySelectorAll('tr[data-model]').forEach(function (row) {
+        row.style.display = row.getAttribute('data-model').indexOf(query) !== -1 ? '' : 'none';
+    });
+});
+</script>

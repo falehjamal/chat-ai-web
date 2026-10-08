@@ -2,6 +2,7 @@
 
 namespace App\Modules\Chat\Application;
 
+use App\Core\Env;
 use App\Modules\Admin\Infrastructure\AIConfigRepository;
 use App\Modules\Chat\Domain\PublicChatContract;
 
@@ -43,8 +44,8 @@ class ModeConfigResolver
             'providerKey' => $resolved['provider_key'],
             'providerLabel' => $resolved['provider_label'],
             'providerDriver' => $resolved['driver'],
-            'providerBaseUrl' => rtrim($resolved['base_url'], '/'),
-            'providerApiKeyEnvVar' => $resolved['api_key_env_var'],
+            'providerBaseUrl' => $this->providerBaseUrl($resolved),
+            'providerApiKeyEnvVar' => $this->providerApiKeyEnvVar($resolved),
         ];
     }
 
@@ -74,17 +75,38 @@ class ModeConfigResolver
             'ocrStrategy' => $legacy['ocr_strategy'],
             'systemPrompt' => $legacy['system_prompt'],
             'modelKey' => $legacy['default_model_key'],
-            'modelLabel' => strtoupper($legacy['default_model_key']),
+            'modelLabel' => $legacy['default_model_key'],
             'apiModel' => $legacy['default_model_key'],
             'temperature' => 0.3,
             'maxTokens' => 4096,
-            'useMaxCompletionTokens' => true,
+            'useMaxCompletionTokens' => false,
             'supportsVision' => $modeKey === 'uas-math',
-            'providerKey' => 'openai',
-            'providerLabel' => 'OpenAI',
+            'providerKey' => '9router',
+            'providerLabel' => '9router',
             'providerDriver' => 'openai_compatible',
-            'providerBaseUrl' => 'https://api.openai.com/v1',
-            'providerApiKeyEnvVar' => 'OPENAI_API_KEY',
+            'providerBaseUrl' => rtrim((string) Env::get('NINEROUTER_URL', 'http://127.0.0.1:20128/v1'), '/'),
+            'providerApiKeyEnvVar' => 'NINEROUTER_KEY',
         ];
+    }
+
+    private function providerBaseUrl(array $resolved)
+    {
+        if (($resolved['provider_key'] ?? '') === '9router') {
+            $fromEnv = trim((string) Env::get('NINEROUTER_URL', ''));
+            if ($fromEnv !== '') {
+                return rtrim($fromEnv, '/');
+            }
+        }
+
+        return rtrim($resolved['base_url'], '/');
+    }
+
+    private function providerApiKeyEnvVar(array $resolved)
+    {
+        if (($resolved['provider_key'] ?? '') === '9router') {
+            return 'NINEROUTER_KEY';
+        }
+
+        return $resolved['api_key_env_var'];
     }
 }

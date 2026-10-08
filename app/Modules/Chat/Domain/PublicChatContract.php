@@ -16,7 +16,7 @@ class PublicChatContract
                 'accepts_image' => false,
                 'ocr_strategy' => 'client_extract_text',
                 'system_prompt' => 'Kamu adalah asisten virtual yang ceria, informatif, dan ramah. Kamu dibuat oleh developer bernama Ahmad Faleh Jamaluddin.',
-                'default_model_key' => 'gpt-5.2',
+                'default_model_key' => 'cu/gpt-5.2',
             ],
             'uas' => [
                 'label' => 'OCR Low',
@@ -27,7 +27,7 @@ class PublicChatContract
                 'accepts_image' => false,
                 'ocr_strategy' => 'client_extract_text',
                 'system_prompt' => 'Anda adalah asisten AI yang membantu mahasiswa menjawab soal. Berikan jawaban singkat, dan relevan. Sebelum menjawab, pikirkan dulu kemungkinan jawaban secara runtut, lalu simpulkan jawaban akhir secara singkat padat dan jelas.',
-                'default_model_key' => 'gpt-5.2',
+                'default_model_key' => 'cu/gpt-5-mini',
             ],
             'uas-math' => [
                 'label' => 'OCR High',
@@ -37,8 +37,8 @@ class PublicChatContract
                 'history_limit' => 0,
                 'accepts_image' => true,
                 'ocr_strategy' => 'vision_direct',
-                'system_prompt' => "Anda adalah asisten AI yang dapat membantu menyelesaikan soal dari berbagai mata pelajaran, dengan keahlian utama dalam matematika dan pemecahan soal. Tugas Anda meliputi:\n1. Jika terdapat gambar: Analisis isi gambar untuk mengidentifikasi dan memahami soal yang diberikan.\n2. Jika hanya teks: Jawab pertanyaan secara langsung sesuai konteks mata pelajaran.\n3. Identifikasi jenis soal — terutama untuk matematika (misalnya aljabar, kalkulus, geometri, dll.), namun juga relevan untuk bidang lain seperti fisika, kimia, atau bahasa.\n4. Berikan jawaban akhir yang akurat dan dapat dipertanggungjawabkan.\n5. Jelaskan secara singkat, lalu langsung berikan jawaban akhir secara to the point.",
-                'default_model_key' => 'gpt-5.2',
+                'system_prompt' => "Anda adalah asisten akademik AI yang ahli dalam menjawab soal ujian dari berbagai mata pelajaran — matematika, fisika, kimia, biologi, ekonomi, bahasa, sejarah, dan lainnya.\n\nTUGAS UTAMA:\n- Jika ada gambar → baca dan pahami soal dari gambar tersebut\n- Jika hanya teks → jawab langsung sesuai konteks mata pelajaran\n\nCARA MENJAWAB:\n1. Identifikasi jenis soal dan mata pelajaran secara singkat\n2. Tulis langkah penyelesaian secara ringkas dan terstruktur\n3. Berikan JAWABAN AKHIR yang jelas dan tegas — tandai dengan \"**Jawaban: ...**\"\n\nATURAN:\n- Utamakan akurasi dan ketepatan jawaban\n- Jangan bertele-tele — langsung ke inti\n- Untuk soal pilihan ganda: sebutkan opsi yang benar beserta alasan singkatnya\n- Untuk soal uraian: berikan jawaban lengkap namun padat\n- Untuk matematika/sains: tampilkan rumus dan langkah perhitungan yang relevan saja\n- Gunakan bahasa yang sama dengan soal (Indonesia atau Inggris)",
+                'default_model_key' => 'cu/gpt-5.2',
             ],
         ];
     }

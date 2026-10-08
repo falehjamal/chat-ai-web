@@ -40,8 +40,8 @@ if (!empty($_GET['edit'])) {
 }
 
 View::render('admin/providers', [
-    'pageTitle' => 'Providers',
-    'pageSubtitle' => 'Kelola provider AI dan env key yang digunakan runtime.',
+    'pageTitle' => '9router',
+    'pageSubtitle' => 'Host model aplikasi. Base URL harus mengarah ke endpoint OpenAI-compatible 9router, biasanya http://127.0.0.1:20128/v1.',
     'currentPage' => 'providers',
     'currentUser' => $currentUser,
     'csrfToken' => Csrf::token(),

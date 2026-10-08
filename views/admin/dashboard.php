@@ -70,26 +70,8 @@
         </table>
     </div>
     <div class="panel">
-        <h2 style="margin-top: 0;">Model Tersedia</h2>
-        <table>
-            <thead>
-            <tr>
-                <th>Model Key</th>
-                <th>Provider</th>
-                <th>Vision</th>
-                <th>Token</th>
-            </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($models as $model): ?>
-                <tr>
-                    <td><?= htmlspecialchars($model['model_key']) ?></td>
-                    <td><?= htmlspecialchars($model['provider_label']) ?></td>
-                    <td><?= !empty($model['supports_vision']) ? 'Ya' : 'Tidak' ?></td>
-                    <td><?= number_format((int) $model['max_tokens']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
+        <h2 style="margin-top: 0;">Katalog Model</h2>
+        <p class="value"><?= number_format(count($models ?? [])) ?></p>
+        <p class="muted">Model aktif dari 9router. Daftar lengkap ada di halaman Model.</p>
     </div>
 </div>

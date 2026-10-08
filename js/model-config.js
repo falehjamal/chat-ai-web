@@ -6,7 +6,7 @@
 class ModelConfigManager {
     constructor() {
         this.runtimeConfig = window.APP_RUNTIME_CONFIG || {};
-        this.defaultModel = (this.runtimeConfig.modes && this.runtimeConfig.modes.default && this.runtimeConfig.modes.default.modelKey) || 'gpt-5.2';
+        this.defaultModel = (this.runtimeConfig.modes && this.runtimeConfig.modes.default && this.runtimeConfig.modes.default.modelKey) || 'cu/gpt-5.2';
         this.initialized = false;
     }
 

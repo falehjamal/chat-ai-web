@@ -14,15 +14,16 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
         $apiKeyEnvVar = $modeConfig['providerApiKeyEnvVar'];
         $apiKey = Env::get($apiKeyEnvVar);
 
-        if (!$apiKey || $apiKey === 'your_openai_api_key_here' || $apiKey === 'sk-your-openai-api-key-here') {
+        if (!$apiKey || $this->isPlaceholderKey($apiKey)) {
             error_log('[faleh-ai] API key kosong untuk variabel ' . $apiKeyEnvVar);
             throw new PublicException('API key provider tidak dikonfigurasi.');
         }
 
-        $useResponsesApi = $this->requiresResponsesApi($modeConfig['apiModel']);
+        $useResponsesApi = ($modeConfig['providerKey'] ?? '') !== '9router'
+            && $this->requiresResponsesApi($modeConfig['apiModel']);
         $payload = $useResponsesApi
             ? $this->buildResponsesPayload($modeConfig, $messages)
-            : $this->buildChatCompletionsPayload($modeConfig, $messages);
+            : $this->buildChatCompletionsPayload($modeConfig, $messages, ($modeConfig['providerKey'] ?? '') === '9router');
 
         $endpoint = $useResponsesApi ? '/responses' : '/chat/completions';
         $url = rtrim($modeConfig['providerBaseUrl'], '/') . $endpoint;
@@ -142,8 +143,28 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
         return !$this->isReasoningModel($apiModel);
     }
 
-    private function buildChatCompletionsPayload(array $modeConfig, array $messages)
+    private function isPlaceholderKey($apiKey)
     {
+        $normalized = strtolower(trim((string) $apiKey));
+        return in_array($normalized, [
+            'your_openai_api_key_here',
+            'sk-your-openai-api-key-here',
+            'sk-your-9router-key',
+        ], true);
+    }
+
+    private function buildChatCompletionsPayload(array $modeConfig, array $messages, $nineRouter = false)
+    {
+        if ($nineRouter) {
+            return [
+                'model' => $modeConfig['apiModel'],
+                'messages' => $messages,
+                'stream' => true,
+                'temperature' => (float) $modeConfig['temperature'],
+                'max_tokens' => (int) $modeConfig['maxTokens'],
+            ];
+        }
+
         $payload = [
             'model' => $modeConfig['apiModel'],
             'messages' => $messages,

@@ -6,11 +6,11 @@
         <div class="form-grid">
             <div>
                 <label for="provider_key">Provider Key</label>
-                <input type="text" id="provider_key" name="provider_key" required value="<?= htmlspecialchars($editingProvider['provider_key'] ?? '') ?>">
+                <input type="text" id="provider_key" name="provider_key" required value="<?= htmlspecialchars($editingProvider['provider_key'] ?? '9router') ?>">
             </div>
             <div>
                 <label for="label">Label</label>
-                <input type="text" id="label" name="label" required value="<?= htmlspecialchars($editingProvider['label'] ?? '') ?>">
+                <input type="text" id="label" name="label" required value="<?= htmlspecialchars($editingProvider['label'] ?? '9router') ?>">
             </div>
             <div>
                 <label for="driver">Driver</label>
@@ -20,11 +20,12 @@
             </div>
             <div>
                 <label for="api_key_env_var">Env API Key</label>
-                <input type="text" id="api_key_env_var" name="api_key_env_var" required value="<?= htmlspecialchars($editingProvider['api_key_env_var'] ?? 'OPENAI_API_KEY') ?>">
+                <input type="text" id="api_key_env_var" name="api_key_env_var" required value="<?= htmlspecialchars($editingProvider['api_key_env_var'] ?? 'NINEROUTER_KEY') ?>">
             </div>
             <div style="grid-column: 1 / -1;">
                 <label for="base_url">Base URL</label>
-                <input type="text" id="base_url" name="base_url" required value="<?= htmlspecialchars($editingProvider['base_url'] ?? 'https://api.openai.com/v1') ?>">
+                <input type="text" id="base_url" name="base_url" required value="<?= htmlspecialchars($editingProvider['base_url'] ?? 'http://127.0.0.1:20128/v1') ?>">
+                <p class="muted" style="margin-top: 6px; font-size: 13px;">Endpoint chat: base URL ini ditambah <code>/chat/completions</code>. Isi <code>NINEROUTER_KEY</code> di file <code>.env</code>.</p>
             </div>
             <div>
                 <label>

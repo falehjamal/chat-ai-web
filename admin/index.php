@@ -24,7 +24,7 @@ $last30Days = date('Y-m-d', strtotime('-30 days'));
 
 View::render('admin/dashboard', [
     'pageTitle' => 'Dashboard',
-    'pageSubtitle' => 'Ringkasan kontrak publik dan konfigurasi runtime yang sedang aktif.',
+    'pageSubtitle' => 'Runtime chat memakai 9router lokal sebagai satu-satunya host model.',
     'currentPage' => 'dashboard',
     'currentUser' => $auth->currentUser(),
     'stats' => $historyService->stats($last30Days, $today),

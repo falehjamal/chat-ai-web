@@ -1,5 +1,5 @@
 <h2 style="margin-top: 0;">Login Admin</h2>
-<p class="muted">Masuk untuk mengelola provider, model, mode binding, dan history aplikasi.</p>
+<p class="muted">Masuk untuk mengelola 9router, model, mode binding, dan history aplikasi.</p>
 
 <form method="post">
     <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken) ?>">

@@ -1,6 +1,6 @@
 <div class="panel">
     <h2 style="margin-top: 0;">Konfigurasi Binding Per Mode</h2>
-    <p class="muted">User publik tetap hanya melihat tiga mode utama. Dari sini Anda mengubah provider, model, prompt, dan policy runtime di balik masing-masing mode.</p>
+    <p class="muted">Tiga mode publik tetap sama. Model di sini adalah ID dari katalog 9router, misalnya <code>cu/gpt-5.2</code>.</p>
 </div>
 
 <?php foreach ($runtimeModes as $modeKey => $mode): ?>
