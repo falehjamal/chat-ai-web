@@ -29,7 +29,7 @@ View::render('admin/dashboard', [
     'currentUser' => $auth->currentUser(),
     'stats' => $historyService->stats($last30Days, $today),
     'providers' => $configRepository->allProviders(),
-    'models' => $configRepository->allModels(),
+    'modelCount' => $configRepository->countModels(),
     'modeBindings' => $configRepository->modeBindings(),
     'runtimeModes' => $modeResolver->frontendRuntimeConfig()['modes'],
 ], 'admin/layout');

@@ -31,6 +31,10 @@ class View
 
     public static function redirect($url)
     {
+        if (!is_string($url) || strpos($url, '//') !== false || !preg_match('#^/[A-Za-z0-9_./?=&%-]*$#', $url)) {
+            $url = '/';
+        }
+
         header('Location: ' . $url);
         exit;
     }

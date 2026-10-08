@@ -64,13 +64,11 @@ class ChatHistoryRepository
 
         $stats = [];
 
-        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM chat_history' . $whereSql);
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) AS total_chats, COALESCE(SUM(jumlah_token), 0) AS total_tokens FROM chat_history' . $whereSql);
         $stmt->execute($params);
-        $stats['total_chats'] = (int) $stmt->fetchColumn();
-
-        $stmt = $this->pdo->prepare('SELECT COALESCE(SUM(jumlah_token), 0) FROM chat_history' . $whereSql);
-        $stmt->execute($params);
-        $stats['total_tokens'] = (int) $stmt->fetchColumn();
+        $totals = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $stats['total_chats'] = (int) ($totals['total_chats'] ?? 0);
+        $stats['total_tokens'] = (int) ($totals['total_tokens'] ?? 0);
 
         $stmt = $this->pdo->prepare('SELECT mode, COUNT(*) AS count FROM chat_history' . $whereSql . ' GROUP BY mode');
         $stmt->execute($params);
@@ -91,24 +89,28 @@ class ChatHistoryRepository
         $where = [];
         $params = [];
 
-        if (!empty($filters['ip'])) {
+        $ip = trim((string) ($filters['ip'] ?? ''));
+        if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP)) {
             $where[] = 'ip_address = ?';
-            $params[] = $filters['ip'];
+            $params[] = $ip;
         }
 
-        if (!empty($filters['mode'])) {
+        $mode = (string) ($filters['mode'] ?? '');
+        if ($mode !== '' && in_array($mode, ['default', 'uas', 'uas-math'], true)) {
             $where[] = 'mode = ?';
-            $params[] = $filters['mode'];
+            $params[] = $mode;
         }
 
-        if (!empty($filters['start_date'])) {
-            $where[] = 'DATE(created_at) >= ?';
-            $params[] = $filters['start_date'];
+        $startDate = (string) ($filters['start_date'] ?? '');
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
+            $where[] = 'created_at >= ?';
+            $params[] = $startDate . ' 00:00:00';
         }
 
-        if (!empty($filters['end_date'])) {
-            $where[] = 'DATE(created_at) <= ?';
-            $params[] = $filters['end_date'];
+        $endDate = (string) ($filters['end_date'] ?? '');
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
+            $where[] = 'created_at < DATE_ADD(?, INTERVAL 1 DAY)';
+            $params[] = $endDate . ' 00:00:00';
         }
 
         if (empty($where)) {

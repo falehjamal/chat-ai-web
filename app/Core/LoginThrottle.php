@@ -30,6 +30,63 @@ class LoginThrottle
         });
     }
 
+    public static function consumeAllowance($bucket, $ip, $max, $seconds)
+    {
+        $bucket = preg_replace('/[^a-z0-9_-]/', '', (string) $bucket);
+        if ($bucket === '') {
+            $bucket = 'requests';
+        }
+
+        $path = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . $bucket . '.json';
+        $directory = dirname($path);
+        if (!is_dir($directory) && !mkdir($directory, 0750, true) && !is_dir($directory)) {
+            return true;
+        }
+
+        $handle = fopen($path, 'c+');
+        if ($handle === false || !flock($handle, LOCK_EX)) {
+            if (is_resource($handle)) {
+                fclose($handle);
+            }
+            return true;
+        }
+
+        try {
+            $all = json_decode(stream_get_contents($handle) ?: '', true);
+            if (!is_array($all)) {
+                $all = [];
+            }
+
+            $now = time();
+            $key = hash('sha256', (string) $ip);
+            foreach ($all as $storedKey => $storedState) {
+                if (($now - (int) ($storedState['first'] ?? 0)) >= $seconds) {
+                    unset($all[$storedKey]);
+                }
+            }
+
+            $state = $all[$key] ?? ['count' => 0, 'first' => $now];
+            if (($now - (int) $state['first']) >= $seconds) {
+                $state = ['count' => 0, 'first' => $now];
+            }
+
+            if ($state['count'] >= $max) {
+                return false;
+            }
+
+            $state['count']++;
+            $all[$key] = $state;
+            rewind($handle);
+            ftruncate($handle, 0);
+            fwrite($handle, json_encode($all));
+            fflush($handle);
+            return true;
+        } finally {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
+    }
+
     private static function stateFor($ip)
     {
         $all = self::readAll();

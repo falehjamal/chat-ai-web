@@ -3,6 +3,7 @@
 namespace App\Modules\Admin\Infrastructure;
 
 use App\Core\DatabaseManager;
+use App\Core\PublicException;
 use App\Modules\Chat\Domain\PublicChatContract;
 use PDO;
 
@@ -31,6 +32,22 @@ class AIConfigRepository
     public function saveProvider(array $payload)
     {
         $payload['provider_key'] = $this->normalizeKey($payload['provider_key'] ?? '');
+        $payload['label'] = trim((string) ($payload['label'] ?? ''));
+        $payload['base_url'] = $this->normalizeBaseUrl($payload['base_url'] ?? '');
+        $payload['api_key_env_var'] = strtoupper(trim((string) ($payload['api_key_env_var'] ?? '')));
+        $payload['driver'] = (string) ($payload['driver'] ?? '');
+
+        if ($payload['provider_key'] === '' || $payload['label'] === '' || strlen($payload['label']) > 150) {
+            throw new PublicException('Data provider tidak lengkap.');
+        }
+
+        if (!preg_match('/^[A-Z0-9_]{1,100}$/', $payload['api_key_env_var'])) {
+            throw new PublicException('Nama variabel API key tidak valid.');
+        }
+
+        if ($payload['driver'] !== 'openai_compatible') {
+            throw new PublicException('Driver provider tidak didukung.');
+        }
 
         if (!empty($payload['id'])) {
             $stmt = $this->pdo->prepare(
@@ -42,8 +59,8 @@ class AIConfigRepository
                 $payload['provider_key'],
                 $payload['label'],
                 $payload['driver'],
-                rtrim($payload['base_url'], '/'),
-                strtoupper($payload['api_key_env_var']),
+                $payload['base_url'],
+                $payload['api_key_env_var'],
                 !empty($payload['is_active']) ? 1 : 0,
                 (int) $payload['id'],
             ]);
@@ -59,12 +76,17 @@ class AIConfigRepository
             $payload['provider_key'],
             $payload['label'],
             $payload['driver'],
-            rtrim($payload['base_url'], '/'),
-            strtoupper($payload['api_key_env_var']),
+            $payload['base_url'],
+            $payload['api_key_env_var'],
             !empty($payload['is_active']) ? 1 : 0,
         ]);
 
         return (int) $this->pdo->lastInsertId();
+    }
+
+    public function countModels()
+    {
+        return (int) $this->pdo->query('SELECT COUNT(*) FROM ai_models')->fetchColumn();
     }
 
     public function allModels()
@@ -73,19 +95,6 @@ class AIConfigRepository
             'SELECT m.*, p.provider_key, p.label AS provider_label
              FROM ai_models m
              INNER JOIN ai_providers p ON p.id = m.provider_id
-             ORDER BY p.provider_key ASC, m.model_key ASC'
-        );
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function activeModels()
-    {
-        $stmt = $this->pdo->query(
-            'SELECT m.*, p.provider_key, p.label AS provider_label, p.driver, p.base_url, p.api_key_env_var, p.is_active AS provider_is_active
-             FROM ai_models m
-             INNER JOIN ai_providers p ON p.id = m.provider_id
-             WHERE m.is_active = 1 AND p.is_active = 1
              ORDER BY p.provider_key ASC, m.model_key ASC'
         );
 
@@ -119,6 +128,18 @@ class AIConfigRepository
     public function saveModel(array $payload)
     {
         $payload['model_key'] = $this->normalizeModelKey($payload['model_key'] ?? '');
+        $payload['api_model'] = trim((string) ($payload['api_model'] ?? ''));
+        $payload['label'] = trim((string) ($payload['label'] ?? ''));
+        $payload['temperature'] = max(0, min(2, (float) ($payload['temperature'] ?? 0.3)));
+        $payload['max_tokens'] = max(1, min(128000, (int) ($payload['max_tokens'] ?? 4096)));
+
+        if ($payload['model_key'] === '' || $payload['api_model'] === '' || $payload['label'] === '') {
+            throw new PublicException('Data model tidak lengkap.');
+        }
+
+        if (strlen($payload['api_model']) > 150 || strlen($payload['label']) > 150) {
+            throw new PublicException('Nama model terlalu panjang.');
+        }
 
         if (!empty($payload['id'])) {
             $stmt = $this->pdo->prepare(
@@ -131,8 +152,8 @@ class AIConfigRepository
                 $payload['model_key'],
                 $payload['api_model'],
                 $payload['label'],
-                (float) $payload['temperature'],
-                (int) $payload['max_tokens'],
+                $payload['temperature'],
+                $payload['max_tokens'],
                 !empty($payload['use_max_completion_tokens']) ? 1 : 0,
                 !empty($payload['supports_vision']) ? 1 : 0,
                 !empty($payload['is_active']) ? 1 : 0,
@@ -186,6 +207,22 @@ class AIConfigRepository
             return false;
         }
 
+        $strategy = (string) ($payload['history_strategy'] ?? '');
+        $ocr = (string) ($payload['ocr_strategy'] ?? '');
+        $prompt = (string) ($payload['system_prompt'] ?? '');
+        if (!in_array($strategy, ['recent_window', 'none'], true) || !in_array($ocr, ['client_extract_text', 'vision_direct'], true)) {
+            throw new PublicException('Policy mode tidak valid.');
+        }
+
+        if (trim($prompt) === '' || strlen($prompt) > 8000) {
+            throw new PublicException('System prompt wajib diisi dan maksimal 8000 karakter.');
+        }
+
+        $payload['history_strategy'] = $strategy;
+        $payload['ocr_strategy'] = $ocr;
+        $payload['system_prompt'] = $prompt;
+        $payload['history_limit'] = max(0, min(20, (int) ($payload['history_limit'] ?? 0)));
+
         $stmt = $this->pdo->prepare(
             'INSERT INTO mode_bindings (mode_key, model_id, system_prompt, history_strategy, history_limit, accepts_image, ocr_strategy)
              VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -225,31 +262,20 @@ class AIConfigRepository
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    public function runtimeModes()
+    private function normalizeBaseUrl($value)
     {
-        $resolved = [];
-        foreach (PublicChatContract::modes() as $modeKey => $mode) {
-            $resolved[$modeKey] = $this->resolvedModeConfig($modeKey);
+        $value = rtrim(trim((string) $value), '/');
+        $parts = parse_url($value);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        if ($value === '' || strlen($value) > 255 || !is_array($parts) || !in_array($scheme, ['http', 'https'], true) || empty($parts['host'])) {
+            throw new PublicException('Base URL harus http atau https.');
         }
 
-        return $resolved;
-    }
-
-    public function runtimeModels()
-    {
-        $models = [];
-        foreach ($this->activeModels() as $model) {
-            $models[$model['model_key']] = [
-                'modelKey' => $model['model_key'],
-                'label' => $model['label'],
-                'providerKey' => $model['provider_key'],
-                'supportsVision' => (bool) $model['supports_vision'],
-                'temperature' => (float) $model['temperature'],
-                'maxTokens' => (int) $model['max_tokens'],
-            ];
+        if (isset($parts['user']) || isset($parts['pass'])) {
+            throw new PublicException('Base URL tidak boleh berisi kredensial.');
         }
 
-        return $models;
+        return $value;
     }
 
     private function normalizeKey($value)

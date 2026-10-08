@@ -3,6 +3,7 @@
 namespace App\Modules\Chat\Application;
 
 use App\Core\ErrorPresenter;
+use App\Core\LoginThrottle;
 use App\Core\PublicException;
 use App\Core\Request;
 use App\Core\SseEmitter;
@@ -37,6 +38,22 @@ class StreamChatService
             header('Allow: POST');
             header('Content-Type: text/plain; charset=UTF-8');
             echo 'Method not allowed';
+            return;
+        }
+
+        $length = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        if ($length > 9 * 1024 * 1024) {
+            http_response_code(413);
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo 'Payload terlalu besar';
+            return;
+        }
+
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        if (!LoginThrottle::consumeAllowance('chat-requests', $ip, 30, 600)) {
+            http_response_code(429);
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo 'Terlalu banyak permintaan. Coba lagi beberapa menit lagi.';
             return;
         }
 
@@ -235,20 +252,9 @@ class StreamChatService
 
     private function getRealIpAddress()
     {
-        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-            $candidate = trim($ips[0]);
-            if (filter_var($candidate, FILTER_VALIDATE_IP)) {
-                return $candidate;
-            }
-        }
-
-        if (!empty($_SERVER['HTTP_CLIENT_IP']) && filter_var($_SERVER['HTTP_CLIENT_IP'], FILTER_VALIDATE_IP)) {
-            return $_SERVER['HTTP_CLIENT_IP'];
-        }
-
-        if (!empty($_SERVER['REMOTE_ADDR']) && filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP)) {
-            return $_SERVER['REMOTE_ADDR'];
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        if (filter_var($ip, FILTER_VALIDATE_IP)) {
+            return $ip;
         }
 
         return 'unknown';

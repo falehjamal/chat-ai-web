@@ -29,8 +29,10 @@ class AdminAuthService
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         LoginThrottle::assertAllowed($ip);
 
-        $user = $this->users->findByUsername($username);
-        if (!$user || empty($user['is_active']) || !password_verify($password, $user['password_hash'])) {
+        $user = $this->users->findByUsername(strtolower(trim($username)));
+        $hash = $user['password_hash'] ?? '$2y$10$KIRnXpU7897K0XEGAWlDPO5jd/U0pbygN8icOrNLRtwIsDhhgXF4.';
+        $valid = $user && !empty($user['is_active']) && password_verify($password, $hash);
+        if (!$valid) {
             LoginThrottle::hit($ip);
             return false;
         }
@@ -48,7 +50,13 @@ class AdminAuthService
             return null;
         }
 
-        return $this->users->findById($id);
+        $user = $this->users->findById($id);
+        if (!$user) {
+            return null;
+        }
+
+        unset($user['password_hash']);
+        return $user;
     }
 
     public function requireAuth($redirect = '/admin/login.php')
@@ -72,12 +80,14 @@ class AdminAuthService
         }
 
         $username = strtolower(trim($username));
-        if ($username === '' || trim($password) === '' || trim($displayName) === '') {
-            throw new PublicException('Semua field admin wajib diisi.');
+        $displayName = trim($displayName);
+        $password = (string) $password;
+        if (!preg_match('/^[a-z0-9._-]{3,32}$/', $username) || $displayName === '' || strlen($displayName) > 80) {
+            throw new PublicException('Username 3–32 karakter (huruf, angka, titik, garis). Nama tampilan wajib diisi.');
         }
 
-        if (strlen($password) < 8) {
-            throw new PublicException('Password admin minimal 8 karakter.');
+        if (strlen($password) < 8 || strlen($password) > 128) {
+            throw new PublicException('Password admin 8–128 karakter.');
         }
 
         $id = $this->users->create($username, password_hash($password, PASSWORD_DEFAULT), trim($displayName));

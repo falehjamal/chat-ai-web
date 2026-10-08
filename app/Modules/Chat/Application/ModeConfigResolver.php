@@ -52,14 +52,32 @@ class ModeConfigResolver
     public function frontendRuntimeConfig()
     {
         $modes = [];
-        foreach (PublicChatContract::modes() as $modeKey => $mode) {
+        foreach (array_keys(PublicChatContract::modes()) as $modeKey) {
             $modes[$modeKey] = $this->resolve($modeKey);
         }
 
-        return PublicChatContract::frontendRuntimeConfig(
-            $modes,
-            $this->configRepository->runtimeModels()
-        );
+        return PublicChatContract::frontendRuntimeConfig($modes, []);
+    }
+
+    public function publicRuntimeConfig()
+    {
+        $modes = [];
+        foreach (array_keys(PublicChatContract::modes()) as $modeKey) {
+            $resolved = $this->resolve($modeKey);
+            $modes[$modeKey] = [
+                'label' => $resolved['label'],
+                'endpoint' => $resolved['endpoint'],
+                'localStorageKey' => $resolved['localStorageKey'],
+                'historyLimit' => $resolved['historyLimit'],
+                'modelKey' => $resolved['modelKey'],
+            ];
+        }
+
+        return [
+            'defaultMode' => 'default',
+            'localStorageKeys' => PublicChatContract::localStorageKeys(),
+            'modes' => $modes,
+        ];
     }
 
     private function buildLegacyFallback($modeKey, array $legacy)

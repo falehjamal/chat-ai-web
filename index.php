@@ -6,7 +6,7 @@ use App\Modules\Chat\Application\ModeConfigResolver;
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Boot' . DIRECTORY_SEPARATOR . 'bootstrap.php';
 
 $modeResolver = new ModeConfigResolver();
-$runtimeConfig = $modeResolver->frontendRuntimeConfig();
+$runtimeConfig = $modeResolver->publicRuntimeConfig();
 $appName = Env::get('APP_NAME', 'Faleh AI');
 ?>
 <!DOCTYPE html>

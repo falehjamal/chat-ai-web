@@ -71,7 +71,7 @@
     </div>
     <div class="panel">
         <h2 style="margin-top: 0;">Katalog Model</h2>
-        <p class="value"><?= number_format(count($models ?? [])) ?></p>
+        <p class="value"><?= number_format((int) ($modelCount ?? 0)) ?></p>
         <p class="muted">Model aktif dari 9router. Daftar lengkap ada di halaman Model.</p>
     </div>
 </div>
