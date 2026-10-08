@@ -16,12 +16,14 @@ class Env
         }
 
         if (!is_file($filePath)) {
-            throw new Exception('File environment tidak ditemukan: ' . $filePath);
+            error_log('[faleh-ai] File environment tidak ditemukan: ' . $filePath);
+            throw new Exception('File environment tidak ditemukan.');
         }
 
         $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         if ($lines === false) {
-            throw new Exception('Gagal membaca file environment: ' . $filePath);
+            error_log('[faleh-ai] Gagal membaca file environment: ' . $filePath);
+            throw new Exception('Gagal membaca file environment.');
         }
 
         foreach ($lines as $line) {
@@ -59,5 +61,11 @@ class Env
         }
 
         return $_ENV[$key] ?? $default;
+    }
+
+    public static function isDebug()
+    {
+        $value = strtolower(trim((string) self::get('DEBUG', 'false')));
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
     }
 }

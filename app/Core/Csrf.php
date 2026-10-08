@@ -2,8 +2,6 @@
 
 namespace App\Core;
 
-use RuntimeException;
-
 class Csrf
 {
     const SESSION_KEY = '_csrf_token';
@@ -30,7 +28,7 @@ class Csrf
     public static function requireValid($token)
     {
         if (!self::verify($token)) {
-            throw new RuntimeException('Token CSRF tidak valid.');
+            throw new PublicException('Token CSRF tidak valid.');
         }
     }
 }

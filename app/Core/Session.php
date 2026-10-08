@@ -6,9 +6,32 @@ class Session
 {
     public static function start()
     {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            return;
         }
+
+        $secure = self::isHttps();
+        ini_set('session.use_strict_mode', '1');
+        ini_set('session.use_only_cookies', '1');
+        ini_set('session.cookie_httponly', '1');
+        ini_set('session.cookie_secure', $secure ? '1' : '0');
+
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'domain' => '',
+            'secure' => $secure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+
+        session_start();
+    }
+
+    public static function regenerate()
+    {
+        self::start();
+        session_regenerate_id(true);
     }
 
     public static function get($key, $default = null)
@@ -40,5 +63,14 @@ class Session
         }
 
         session_destroy();
+    }
+
+    private static function isHttps()
+    {
+        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+            return true;
+        }
+
+        return isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443;
     }
 }

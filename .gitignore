@@ -1,8 +1,12 @@
 # Environment files
-config.env
 .env
 .env.local
 .env.production
+config.env
+
+# Runtime
+storage/*.json
+storage/logs/
 
 # Logs
 *.log
@@ -25,5 +29,4 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
-*.swo 
-.htaccess
+*.swo

@@ -1,6 +1,8 @@
 <?php
 
 use App\Core\Csrf;
+use App\Core\ErrorPresenter;
+use App\Core\PublicException;
 use App\Core\View;
 use App\Modules\Admin\Application\AdminAuthService;
 use App\Modules\Admin\Application\AuditLogService;
@@ -29,16 +31,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
         $modeKey = $_POST['mode_key'] ?? 'default';
         if (!PublicChatContract::isValidMode($modeKey)) {
-            throw new RuntimeException('Mode tidak dikenal.');
+            throw new PublicException('Mode tidak dikenal.');
         }
 
         $selectedModel = $repository->findModel((int) ($_POST['model_id'] ?? 0));
         if (!$selectedModel) {
-            throw new RuntimeException('Model binding tidak ditemukan.');
+            throw new PublicException('Model binding tidak ditemukan.');
         }
 
         if ($modeKey === 'uas-math' && empty($selectedModel['supports_vision'])) {
-            throw new RuntimeException('Mode `uas-math` hanya boleh memakai model yang mendukung vision.');
+            throw new PublicException('Mode `uas-math` hanya boleh memakai model yang mendukung vision.');
         }
 
         $before = $repository->modeBindings()[$modeKey] ?? null;
@@ -47,7 +49,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $auditLog->log($currentUser['id'], 'mode_bindings', $modeKey, $before ? 'update' : 'create', $before, $after);
         $successMessage = 'Mode binding `' . $modeKey . '` berhasil disimpan.';
     } catch (Throwable $throwable) {
-        $errorMessage = $throwable->getMessage();
+        $errorMessage = ErrorPresenter::message($throwable);
     }
 }
 

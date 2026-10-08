@@ -2,6 +2,8 @@
 
 namespace App\Modules\Chat\Application;
 
+use App\Core\ErrorPresenter;
+use App\Core\PublicException;
 use App\Core\Request;
 use App\Core\SseEmitter;
 use App\Modules\AI\Application\ProviderRegistry;
@@ -30,6 +32,14 @@ class StreamChatService
 
     public function handle()
     {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            http_response_code(405);
+            header('Allow: POST');
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo 'Method not allowed';
+            return;
+        }
+
         $this->emitter->start();
 
         try {
@@ -72,7 +82,9 @@ class StreamChatService
                 }
             );
         } catch (Exception $exception) {
-            $this->emitter->send(['error' => $exception->getMessage()], 'error');
+            $this->emitter->send([
+                'error' => ErrorPresenter::message($exception, 'Permintaan gagal diproses.'),
+            ], 'error');
         }
     }
 
@@ -91,12 +103,26 @@ class StreamChatService
             $image = (string) $this->request->query('image', '');
         }
 
+        if (strlen($message) > 16000) {
+            throw new PublicException('Pesan terlalu panjang.');
+        }
+
+        if ($image !== '') {
+            if (strlen($image) > 8 * 1024 * 1024 || !preg_match('#^data:image/(jpeg|jpg|png|gif|webp);base64,#i', $image)) {
+                throw new PublicException('Format gambar tidak didukung atau ukurannya terlalu besar.');
+            }
+        }
+
+        if (count($history) > 20) {
+            $history = array_slice($history, -20);
+        }
+
         if ($modeConfig['acceptsImage']) {
             if ($message === '' && $image === '') {
-                throw new Exception('Mode OCR High memerlukan gambar atau pesan teks');
+                throw new PublicException('Mode OCR High memerlukan gambar atau pesan teks');
             }
         } elseif ($message === '') {
-            throw new Exception('No message provided');
+            throw new PublicException('No message provided');
         }
 
         return [
@@ -164,6 +190,10 @@ class StreamChatService
             $text = trim((string) $item['text']);
             if ($text === '') {
                 continue;
+            }
+
+            if (strlen($text) > 8000) {
+                $text = substr($text, 0, 8000);
             }
 
             $normalized[] = [

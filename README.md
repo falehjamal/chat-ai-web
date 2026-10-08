@@ -71,8 +71,8 @@ sudo find /var/www/chat-ai-web -type f -exec chmod 644 {} \;
 
 ```bash
 cd /var/www/chat-ai-web
-sudo cp config.env.example config.env
-sudo nano config.env
+sudo cp .env.example .env
+sudo nano .env
 ```
 
 Isi minimal:
@@ -92,8 +92,8 @@ APP_TIMEZONE=Asia/Jakarta
 ```
 
 ```bash
-sudo chmod 640 config.env
-sudo chown www-data:www-data config.env
+sudo chmod 640 .env
+sudo chown www-data:www-data .env
 ```
 
 ### 5. Virtual host Apache
@@ -126,6 +126,8 @@ sudo systemctl reload apache2
 
 > Ganti `chat-ai-web.example.com` dengan domain atau IP server Anda.
 
+Nginx tidak membaca `.htaccess`. Jika production memakai Nginx, tolak akses ke `.env`, file `.sql`, serta folder `app/`, `migrations/`, `views/`, dan `storage/` di konfigurasi server.
+
 ### 6. Jalankan aplikasi
 
 1. Buka `http://chat-ai-web.example.com` — halaman chat utama
@@ -150,7 +152,7 @@ sudo certbot --apache -d chat-ai-web.example.com
 ```
 chat-ai-web/
 ├── index.php                 # Halaman chat utama
-├── config.env                # Konfigurasi (buat dari .example)
+├── .env                      # Konfigurasi (buat dari .env.example)
 ├── .htaccess                 # Aturan keamanan & MIME WASM (untuk OCR)
 ├── api_stream.php            # API Mode Chat
 ├── api_uas_stream.php        # API Mode OCR Low
@@ -192,7 +194,7 @@ echo 'OK';
 - Hard refresh browser (Ctrl+Shift+R)
 
 **API key invalid**
-- Cek `OPENAI_API_KEY` di `config.env` (tanpa tanda kutip)
+- Cek `OPENAI_API_KEY` di `.env` (tanpa tanda kutip)
 - Pastikan quota OpenAI masih tersedia
 
 **Permission denied**
@@ -204,10 +206,10 @@ sudo chown -R www-data:www-data /var/www/chat-ai-web
 
 ## Production checklist
 
-- [ ] `config.env` terisi credentials production
-- [ ] `DEBUG=false`
+- [ ] `.env` terisi credentials production, `DEBUG=false`
 - [ ] HTTPS aktif
-- [ ] `config.env` tidak bisa diakses publik (`.htaccess`)
+- [ ] Apache `AllowOverride All` supaya `.htaccess` memblokir `.env`, SQL, dan folder internal
+- [ ] User database khusus aplikasi, bukan `root`
 - [ ] Akun admin sudah dibuat via `/admin/setup.php`
 - [ ] Semua mode chat sudah ditest
 

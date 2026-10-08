@@ -1,0 +1,26 @@
+Options -Indexes +FollowSymLinks
+ServerSignature Off
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Header always unset X-Powered-By
+</IfModule>
+
+AddType application/wasm .wasm
+
+<FilesMatch "(^\.|\.(env|sql|log|ini|bak|md|yml|yaml|json)$)">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^(model_config|database|env_helper)\.php$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(?:app|migrations|views|storage)(?:/|$) - [F,L]
+    RewriteRule (?:^|/)\. - [F,L]
+</IfModule>

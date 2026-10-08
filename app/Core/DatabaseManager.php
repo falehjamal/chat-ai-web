@@ -55,7 +55,11 @@ class DatabaseManager
 
             return self::$pdo;
         } catch (PDOException $exception) {
-            throw new Exception('Koneksi database gagal: ' . $exception->getMessage());
+            error_log('[faleh-ai] Koneksi database gagal: ' . $exception->getMessage());
+            $message = Env::isDebug()
+                ? 'Koneksi database gagal: ' . $exception->getMessage()
+                : 'Koneksi database gagal.';
+            throw new Exception($message);
         }
     }
 

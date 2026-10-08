@@ -1,6 +1,7 @@
 <?php
 
 use App\Core\Csrf;
+use App\Core\ErrorPresenter;
 use App\Core\View;
 use App\Modules\Admin\Application\AdminAuthService;
 use App\Modules\Admin\Application\AuditLogService;
@@ -29,7 +30,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
         View::redirect('/admin/index.php');
     } catch (Throwable $throwable) {
-        $errorMessage = $throwable->getMessage();
+        $errorMessage = ErrorPresenter::message($throwable);
     }
 }
 

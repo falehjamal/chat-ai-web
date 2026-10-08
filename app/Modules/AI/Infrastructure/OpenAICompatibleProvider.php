@@ -3,6 +3,7 @@
 namespace App\Modules\AI\Infrastructure;
 
 use App\Core\Env;
+use App\Core\PublicException;
 use App\Modules\AI\Contracts\ProviderAdapterInterface;
 use Exception;
 
@@ -13,8 +14,9 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
         $apiKeyEnvVar = $modeConfig['providerApiKeyEnvVar'];
         $apiKey = Env::get($apiKeyEnvVar);
 
-        if (!$apiKey || $apiKey === 'your_openai_api_key_here') {
-            throw new Exception('API key provider tidak dikonfigurasi dengan benar pada env `' . $apiKeyEnvVar . '`.');
+        if (!$apiKey || $apiKey === 'your_openai_api_key_here' || $apiKey === 'sk-your-openai-api-key-here') {
+            error_log('[faleh-ai] API key kosong untuk variabel ' . $apiKeyEnvVar);
+            throw new PublicException('API key provider tidak dikonfigurasi.');
         }
 
         $useResponsesApi = $this->requiresResponsesApi($modeConfig['apiModel']);
@@ -30,6 +32,8 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
         $done = false;
 
         $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -111,7 +115,7 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
         }
 
         if ($fullResponse === '') {
-            throw new Exception('No response received from AI');
+            throw new PublicException('Tidak ada respons dari AI.');
         }
 
         return $fullResponse;

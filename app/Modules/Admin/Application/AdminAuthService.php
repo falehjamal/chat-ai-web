@@ -2,10 +2,11 @@
 
 namespace App\Modules\Admin\Application;
 
+use App\Core\LoginThrottle;
+use App\Core\PublicException;
 use App\Core\Session;
 use App\Core\View;
 use App\Modules\Admin\Infrastructure\AdminUserRepository;
-use Exception;
 
 class AdminAuthService
 {
@@ -25,15 +26,17 @@ class AdminAuthService
 
     public function attempt($username, $password)
     {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        LoginThrottle::assertAllowed($ip);
+
         $user = $this->users->findByUsername($username);
-        if (!$user || empty($user['is_active'])) {
+        if (!$user || empty($user['is_active']) || !password_verify($password, $user['password_hash'])) {
+            LoginThrottle::hit($ip);
             return false;
         }
 
-        if (!password_verify($password, $user['password_hash'])) {
-            return false;
-        }
-
+        LoginThrottle::clear($ip);
+        Session::regenerate();
         Session::put(self::SESSION_KEY, (int) $user['id']);
         return true;
     }
@@ -65,19 +68,20 @@ class AdminAuthService
     public function createInitialAdmin($username, $password, $displayName)
     {
         if ($this->hasAnyAdmin()) {
-            throw new Exception('Admin awal sudah dibuat.');
+            throw new PublicException('Admin awal sudah dibuat.');
         }
 
         $username = strtolower(trim($username));
         if ($username === '' || trim($password) === '' || trim($displayName) === '') {
-            throw new Exception('Semua field admin wajib diisi.');
+            throw new PublicException('Semua field admin wajib diisi.');
         }
 
         if (strlen($password) < 8) {
-            throw new Exception('Password admin minimal 8 karakter.');
+            throw new PublicException('Password admin minimal 8 karakter.');
         }
 
         $id = $this->users->create($username, password_hash($password, PASSWORD_DEFAULT), trim($displayName));
+        Session::regenerate();
         Session::put(self::SESSION_KEY, $id);
         return $id;
     }
