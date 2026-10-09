@@ -199,7 +199,7 @@ class StreamChatService
 
     private function visionModelForImage(array $modeConfig, $image)
     {
-        if ($image === '' || strpos((string) ($modeConfig['apiModel'] ?? ''), 'cu/') !== 0) {
+        if ($image === '' || $this->forwardsImageBytes($modeConfig['apiModel'] ?? '')) {
             return $modeConfig;
         }
 
@@ -221,6 +221,11 @@ class StreamChatService
         $modeConfig['maxTokens'] = (int) $replacement['max_tokens'];
 
         return $modeConfig;
+    }
+
+    private function forwardsImageBytes($apiModel)
+    {
+        return strpos(strtolower(trim((string) $apiModel)), 'ag/') === 0;
     }
 
     private function imageCapableModel()
