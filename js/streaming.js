@@ -16,6 +16,7 @@ class StreamingChat {
         this.isStreaming = true;
         this.streamingText = '';
         this.hasError = false;
+        this.finalized = false;
 
         if (!skipUserMessage) {
             const displayMessage = message || (imageBase64 ? 'Gambar soal matematika' : 'Pertanyaan matematika');
@@ -43,6 +44,7 @@ class StreamingChat {
         this.isStreaming = true;
         this.streamingText = '';
         this.hasError = false;
+        this.finalized = false;
 
         this.addUserMessage(message);
         this.currentBotMessageElement = this.createBotMessagePlaceholder();
@@ -97,9 +99,21 @@ class StreamingChat {
             console.error('Streaming error:', error);
             this.handleStreamError(error.message);
         } finally {
+            if (this._renderDebounce) {
+                clearTimeout(this._renderDebounce);
+                this._renderDebounce = null;
+            }
+
+            if (!this.hasError && this.streamingText) {
+                this.finalizeMessage();
+            } else if (!this.hasError && this.currentBotMessageElement) {
+                this.handleStreamError('Tidak ada respons dari AI.');
+            }
+
+            const responseText = this.streamingText;
             this.stopStreaming();
             if (onComplete) {
-                onComplete(this.streamingText);
+                onComplete(responseText);
             }
         }
     }
@@ -286,7 +300,8 @@ class StreamingChat {
 
     // Finalize message (remove streaming class, render full markdown + MathJax)
     finalizeMessage() {
-        if (!this.currentBotMessageElement || this.hasError) return;
+        if (!this.currentBotMessageElement || this.hasError || this.finalized) return;
+        this.finalized = true;
 
         // Cancel any pending render debounce
         if (this._renderDebounce) {
@@ -355,7 +370,7 @@ class StreamingChat {
 
     // Setup copy button functionality
     setupCopyButton(messageElement) {
-        const copyBtn = messageElement.find('> .message-content > .copy-btn');
+        const copyBtn = messageElement.find('.copy-btn').first();
         const originalText = this.streamingText;
 
         copyBtn.on('click', async function (e) {

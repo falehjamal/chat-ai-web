@@ -18,7 +18,9 @@ class NineRouterCatalogSync
 
         $pdo = DatabaseManager::connection();
         $existingBindings = $pdo->query(
-            'SELECT mode_key, system_prompt, history_strategy, history_limit, accepts_image, ocr_strategy FROM mode_bindings'
+            'SELECT mb.mode_key, mb.system_prompt, mb.history_strategy, mb.history_limit, mb.accepts_image, mb.ocr_strategy, m.model_key
+             FROM mode_bindings mb
+             LEFT JOIN ai_models m ON m.id = mb.model_id'
         )->fetchAll(PDO::FETCH_ASSOC);
 
         $pdo->beginTransaction();
@@ -143,7 +145,16 @@ class NineRouterCatalogSync
 
         foreach (PublicChatContract::modes() as $modeKey => $mode) {
             $previous = $indexed[$modeKey] ?? null;
-            $modelKey = $defaults[$modeKey] ?? 'cu/gpt-5.2';
+            $savedModelKey = trim((string) ($previous['model_key'] ?? ''));
+            $modelKey = $savedModelKey !== '' ? $savedModelKey : ($defaults[$modeKey] ?? 'cu/gpt-5.2');
+
+            if ($modeKey === 'uas-math' && ($modelKey === '' || strpos($modelKey, 'cu/') === 0)) {
+                $visionModelKey = $this->preferredImageModelKey($pdo);
+                if ($visionModelKey !== null) {
+                    $modelKey = $visionModelKey;
+                }
+            }
+
             $findModel->execute([$modelKey]);
             $model = $findModel->fetch(PDO::FETCH_ASSOC);
 
@@ -167,5 +178,29 @@ class NineRouterCatalogSync
                 $previous['ocr_strategy'] ?? $mode['ocr_strategy'],
             ]);
         }
+    }
+
+    private function preferredImageModelKey(PDO $pdo)
+    {
+        $preferred = [
+            'ag/gemini-3.8-flash-high',
+            'ag/gemini-3.8-flash',
+            'ag/gemini-3.6-flash-high',
+        ];
+        $find = $pdo->prepare('SELECT model_key FROM ai_models WHERE model_key = ? AND is_active = 1 LIMIT 1');
+
+        foreach ($preferred as $modelKey) {
+            $find->execute([$modelKey]);
+            $found = $find->fetchColumn();
+            if ($found) {
+                return (string) $found;
+            }
+        }
+
+        $found = $pdo->query(
+            "SELECT model_key FROM ai_models WHERE model_key LIKE 'ag/%' AND supports_vision = 1 AND is_active = 1 ORDER BY model_key ASC LIMIT 1"
+        )->fetchColumn();
+
+        return $found ? (string) $found : null;
     }
 }

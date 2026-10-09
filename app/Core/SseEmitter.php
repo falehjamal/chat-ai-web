@@ -20,8 +20,13 @@ class SseEmitter
 
     public function send($data, $event = 'message')
     {
+        $encoded = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        if ($encoded === false) {
+            $encoded = '{"error":"Respons tidak bisa dikirim."}';
+        }
+
         echo 'event: ' . $event . "\n";
-        echo 'data: ' . json_encode($data) . "\n\n";
+        echo 'data: ' . $encoded . "\n\n";
         flush();
     }
 }

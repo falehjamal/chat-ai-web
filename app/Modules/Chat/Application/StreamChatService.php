@@ -2,6 +2,7 @@
 
 namespace App\Modules\Chat\Application;
 
+use App\Core\DatabaseManager;
 use App\Core\ErrorPresenter;
 use App\Core\LoginThrottle;
 use App\Core\PublicException;
@@ -62,6 +63,7 @@ class StreamChatService
         try {
             $modeConfig = $this->modeResolver->resolve($this->modeKey);
             $payload = $this->payload($modeConfig);
+            $modeConfig = $this->visionModelForImage($modeConfig, $payload['image']);
             $messages = $this->buildMessages($modeConfig, $payload['message'], $payload['history'], $payload['image']);
             $provider = $this->providerRegistry->resolve($modeConfig['providerDriver']);
             $completed = false;
@@ -193,6 +195,71 @@ class StreamChatService
         ];
 
         return $messages;
+    }
+
+    private function visionModelForImage(array $modeConfig, $image)
+    {
+        if ($image === '' || strpos((string) ($modeConfig['apiModel'] ?? ''), 'cu/') !== 0) {
+            return $modeConfig;
+        }
+
+        $replacement = $this->imageCapableModel();
+        if (!$replacement) {
+            $replacement = [
+                'model_key' => 'ag/gemini-3.8-flash-high',
+                'api_model' => 'ag/gemini-3.8-flash-high',
+                'label' => 'ag/gemini-3.8-flash-high',
+                'temperature' => $modeConfig['temperature'],
+                'max_tokens' => $modeConfig['maxTokens'],
+            ];
+        }
+
+        $modeConfig['modelKey'] = $replacement['model_key'];
+        $modeConfig['modelLabel'] = $replacement['label'];
+        $modeConfig['apiModel'] = $replacement['api_model'];
+        $modeConfig['temperature'] = (float) $replacement['temperature'];
+        $modeConfig['maxTokens'] = (int) $replacement['max_tokens'];
+
+        return $modeConfig;
+    }
+
+    private function imageCapableModel()
+    {
+        try {
+            $pdo = DatabaseManager::connection();
+        } catch (\Exception $exception) {
+            return null;
+        }
+
+        $preferred = [
+            'ag/gemini-3.8-flash-high',
+            'ag/gemini-3.8-flash',
+            'ag/gemini-3.6-flash-high',
+        ];
+        $find = $pdo->prepare(
+            'SELECT model_key, api_model, label, temperature, max_tokens
+             FROM ai_models
+             WHERE model_key = ? AND is_active = 1
+             LIMIT 1'
+        );
+
+        foreach ($preferred as $modelKey) {
+            $find->execute([$modelKey]);
+            $row = $find->fetch(\PDO::FETCH_ASSOC);
+            if ($row) {
+                return $row;
+            }
+        }
+
+        $row = $pdo->query(
+            "SELECT model_key, api_model, label, temperature, max_tokens
+             FROM ai_models
+             WHERE model_key LIKE 'ag/%' AND supports_vision = 1 AND is_active = 1
+             ORDER BY model_key ASC
+             LIMIT 1"
+        )->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
     }
 
     private function normalizeHistory(array $history)

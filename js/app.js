@@ -669,6 +669,16 @@ $(document).ready(async function() {
             
             // For OCR High mode, send image data as well
             if (currentMode === 'uas-math') {
+                if (currentImage) {
+                    currentImageId = String(Date.now());
+                    try {
+                        localStorage.setItem(`math_image_${currentImageId}`, currentImage);
+                        cleanupOldImages();
+                    } catch (error) {
+                        console.error('Gagal menyimpan gambar chat:', error);
+                    }
+                }
+
                 const skipUserMessage = false;
                 
                 // OCR High mode: Tanpa history, setiap chat independen

@@ -31,6 +31,43 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
         $fullResponse = '';
         $rawApiResponse = '';
         $done = false;
+        $pendingLine = '';
+
+        $handleLine = function ($line) use (
+            &$fullResponse,
+            &$done,
+            $useResponsesApi,
+            $onChunk,
+            $onComplete
+        ) {
+            $line = trim($line);
+            if ($line === '' || strpos($line, 'data: ') !== 0) {
+                return;
+            }
+
+            $data = trim(substr($line, 6));
+            if (!$useResponsesApi && $data === '[DONE]') {
+                $done = true;
+                $onComplete($fullResponse);
+                return;
+            }
+
+            $json = json_decode($data, true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($json)) {
+                return;
+            }
+
+            $content = $this->extractStreamDelta($json, $useResponsesApi);
+            if ($content !== null && $content !== '') {
+                $fullResponse .= $content;
+                $onChunk($content, $fullResponse);
+            }
+
+            if ($useResponsesApi && ($json['type'] ?? '') === 'response.completed') {
+                $done = true;
+                $onComplete($fullResponse);
+            }
+        };
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
@@ -44,53 +81,26 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
         ]);
         curl_setopt($ch, CURLOPT_TIMEOUT, 120);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (
-            &$fullResponse,
-            &$rawApiResponse,
-            &$done,
-            $useResponsesApi,
-            $onChunk,
-            $onComplete
-        ) {
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (&$rawApiResponse, &$pendingLine, $handleLine) {
             if (strlen($rawApiResponse) < 50000) {
                 $rawApiResponse .= $chunk;
             }
 
-            $lines = explode("\n", $chunk);
-            foreach ($lines as $line) {
-                $line = trim($line);
-                if ($line === '' || strpos($line, 'data: ') !== 0) {
-                    continue;
-                }
-
-                $data = trim(substr($line, 6));
-                if (!$useResponsesApi && $data === '[DONE]') {
-                    $done = true;
-                    $onComplete($fullResponse);
-                    continue;
-                }
-
-                $json = json_decode($data, true);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    continue;
-                }
-
-                $content = $this->extractStreamDelta($json, $useResponsesApi);
-                if ($content !== null && $content !== '') {
-                    $fullResponse .= $content;
-                    $onChunk($content, $fullResponse);
-                }
-
-                if ($useResponsesApi && ($json['type'] ?? '') === 'response.completed') {
-                    $done = true;
-                    $onComplete($fullResponse);
-                }
+            $pendingLine .= $chunk;
+            while (($break = strpos($pendingLine, "\n")) !== false) {
+                $line = substr($pendingLine, 0, $break);
+                $pendingLine = substr($pendingLine, $break + 1);
+                $handleLine($line);
             }
 
             return strlen($chunk);
         });
 
         curl_exec($ch);
+        if (trim($pendingLine) !== '') {
+            $handleLine($pendingLine);
+            $pendingLine = '';
+        }
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
         curl_close($ch);
@@ -268,10 +278,42 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
             return null;
         }
 
-        if (isset($json['choices'][0]['delta']['content'])) {
-            return $json['choices'][0]['delta']['content'];
+        $delta = $json['choices'][0]['delta'] ?? null;
+        if (is_array($delta) && array_key_exists('content', $delta)) {
+            return $this->textFromContent($delta['content']);
+        }
+
+        $message = $json['choices'][0]['message']['content'] ?? null;
+        $fromMessage = $this->textFromContent($message);
+        if ($fromMessage !== null && $fromMessage !== '') {
+            return $fromMessage;
         }
 
         return null;
+    }
+
+    private function textFromContent($content)
+    {
+        if (is_string($content)) {
+            return $content;
+        }
+
+        if (!is_array($content)) {
+            return null;
+        }
+
+        $text = '';
+        foreach ($content as $part) {
+            if (is_string($part)) {
+                $text .= $part;
+                continue;
+            }
+
+            if (is_array($part) && isset($part['text']) && is_string($part['text'])) {
+                $text .= $part['text'];
+            }
+        }
+
+        return $text;
     }
 }
