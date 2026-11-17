@@ -224,7 +224,6 @@ $currentUser = $currentUser ?? null;
             </div>
             <nav class="nav">
                 <a href="/admin/index.php" class="<?= $currentPage === 'dashboard' ? 'active' : '' ?>">Dashboard</a>
-                <a href="/admin/providers.php" class="<?= $currentPage === 'providers' ? 'active' : '' ?>">9router</a>
                 <a href="/admin/models.php" class="<?= $currentPage === 'models' ? 'active' : '' ?>">Model</a>
                 <a href="/admin/modes.php" class="<?= $currentPage === 'modes' ? 'active' : '' ?>">Mode Bindings</a>
                 <a href="/admin/history.php" class="<?= $currentPage === 'history' ? 'active' : '' ?>">History</a>

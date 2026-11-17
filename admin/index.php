@@ -24,7 +24,7 @@ $last30Days = date('Y-m-d', strtotime('-30 days'));
 
 View::render('admin/dashboard', [
     'pageTitle' => 'Dashboard',
-    'pageSubtitle' => 'Runtime chat memakai 9router lokal sebagai satu-satunya host model.',
+    'pageSubtitle' => 'Runtime chat memakai OpenAI sebagai satu-satunya provider model.',
     'currentPage' => 'dashboard',
     'currentUser' => $auth->currentUser(),
     'stats' => $historyService->stats($last30Days, $today),

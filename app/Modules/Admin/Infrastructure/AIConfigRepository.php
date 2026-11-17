@@ -24,68 +24,6 @@ class AIConfigRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function findProvider($id)
-    {
-        $stmt = $this->pdo->prepare('SELECT * FROM ai_providers WHERE id = ?');
-        $stmt->execute([$id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    }
-
-    public function saveProvider(array $payload)
-    {
-        $payload['provider_key'] = $this->normalizeKey($payload['provider_key'] ?? '');
-        $payload['label'] = trim((string) ($payload['label'] ?? ''));
-        $payload['base_url'] = $this->normalizeBaseUrl($payload['base_url'] ?? '');
-        $payload['api_key_env_var'] = strtoupper(trim((string) ($payload['api_key_env_var'] ?? '')));
-        $payload['driver'] = (string) ($payload['driver'] ?? '');
-
-        if ($payload['provider_key'] === '' || $payload['label'] === '' || strlen($payload['label']) > 150) {
-            throw new PublicException('Data provider tidak lengkap.');
-        }
-
-        if (!preg_match('/^[A-Z0-9_]{1,100}$/', $payload['api_key_env_var'])) {
-            throw new PublicException('Nama variabel API key tidak valid.');
-        }
-
-        if ($payload['driver'] !== 'openai_compatible') {
-            throw new PublicException('Driver provider tidak didukung.');
-        }
-
-        if (!empty($payload['id'])) {
-            $stmt = $this->pdo->prepare(
-                'UPDATE ai_providers
-                 SET provider_key = ?, label = ?, driver = ?, base_url = ?, api_key_env_var = ?, is_active = ?
-                 WHERE id = ?'
-            );
-            $stmt->execute([
-                $payload['provider_key'],
-                $payload['label'],
-                $payload['driver'],
-                $payload['base_url'],
-                $payload['api_key_env_var'],
-                !empty($payload['is_active']) ? 1 : 0,
-                (int) $payload['id'],
-            ]);
-
-            return (int) $payload['id'];
-        }
-
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO ai_providers (provider_key, label, driver, base_url, api_key_env_var, is_active)
-             VALUES (?, ?, ?, ?, ?, ?)'
-        );
-        $stmt->execute([
-            $payload['provider_key'],
-            $payload['label'],
-            $payload['driver'],
-            $payload['base_url'],
-            $payload['api_key_env_var'],
-            !empty($payload['is_active']) ? 1 : 0,
-        ]);
-
-        return (int) $this->pdo->lastInsertId();
-    }
-
     public function countModels()
     {
         return (int) $this->pdo->query('SELECT COUNT(*) FROM ai_models')->fetchColumn();
@@ -269,29 +207,6 @@ class AIConfigRepository
         );
         $stmt->execute([$modeKey]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    }
-
-    private function normalizeBaseUrl($value)
-    {
-        $value = rtrim(trim((string) $value), '/');
-        $parts = parse_url($value);
-        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        if ($value === '' || strlen($value) > 255 || !is_array($parts) || !in_array($scheme, ['http', 'https'], true) || empty($parts['host'])) {
-            throw new PublicException('Base URL harus http atau https.');
-        }
-
-        if (isset($parts['user']) || isset($parts['pass'])) {
-            throw new PublicException('Base URL tidak boleh berisi kredensial.');
-        }
-
-        return $value;
-    }
-
-    private function normalizeKey($value)
-    {
-        $value = strtolower(trim($value));
-        $value = preg_replace('/[^a-z0-9\-_.]+/', '-', $value);
-        return trim($value, '-');
     }
 
     private function normalizeModelKey($value)
