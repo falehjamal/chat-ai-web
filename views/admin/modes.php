@@ -1,6 +1,6 @@
 <div class="panel">
     <h2 style="margin-top: 0;">Konfigurasi Binding Per Mode</h2>
-    <p class="muted">Tiga mode publik tetap sama. Model di sini adalah ID dari katalog 9router, misalnya <code>cu/gpt-5.2</code>.</p>
+    <p class="muted">Tiga mode publik tetap sama. Model diambil dari daftar di halaman Model, misalnya <code>gpt-5.2</code>.</p>
 </div>
 
 <?php foreach ($runtimeModes as $modeKey => $mode): ?>
@@ -21,6 +21,15 @@
                             <?php endif; ?>
                         <?php endforeach; ?>
                     </select>
+                </div>
+                <div>
+                    <label for="reasoning_effort_<?= htmlspecialchars($modeKey) ?>">Reasoning Effort</label>
+                    <select id="reasoning_effort_<?= htmlspecialchars($modeKey) ?>" name="reasoning_effort">
+                        <?php foreach ($effortOptions as $effortValue => $effortLabel): ?>
+                            <option value="<?= htmlspecialchars((string) $effortValue) ?>" <?= ($mode['reasoningEffort'] ?? '') === (string) $effortValue ? 'selected' : '' ?>><?= htmlspecialchars($effortLabel) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="muted" style="margin-top: 6px; font-size: 13px;">Hanya dikirim untuk model reasoning (gpt-5 / o-series). Jika model tidak mendukung nilai ini, OpenAI mengembalikan error saat chat.</p>
                 </div>
                 <div>
                     <label for="history_strategy_<?= htmlspecialchars($modeKey) ?>">History Strategy</label>

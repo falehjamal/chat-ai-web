@@ -9,6 +9,8 @@ use PDO;
 
 class AIConfigRepository
 {
+    public const REASONING_EFFORTS = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh'];
+
     private $pdo;
 
     public function __construct()
@@ -218,21 +220,27 @@ class AIConfigRepository
             throw new PublicException('System prompt wajib diisi dan maksimal 8000 karakter.');
         }
 
+        $effort = strtolower(trim((string) ($payload['reasoning_effort'] ?? '')));
+        if ($effort !== '' && !in_array($effort, self::REASONING_EFFORTS, true)) {
+            throw new PublicException('Reasoning effort tidak valid.');
+        }
+
         $payload['history_strategy'] = $strategy;
         $payload['ocr_strategy'] = $ocr;
         $payload['system_prompt'] = $prompt;
         $payload['history_limit'] = max(0, min(20, (int) ($payload['history_limit'] ?? 0)));
 
         $stmt = $this->pdo->prepare(
-            'INSERT INTO mode_bindings (mode_key, model_id, system_prompt, history_strategy, history_limit, accepts_image, ocr_strategy)
-             VALUES (?, ?, ?, ?, ?, ?, ?)
+            'INSERT INTO mode_bindings (mode_key, model_id, system_prompt, history_strategy, history_limit, accepts_image, ocr_strategy, reasoning_effort)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 model_id = VALUES(model_id),
                 system_prompt = VALUES(system_prompt),
                 history_strategy = VALUES(history_strategy),
                 history_limit = VALUES(history_limit),
                 accepts_image = VALUES(accepts_image),
-                ocr_strategy = VALUES(ocr_strategy)'
+                ocr_strategy = VALUES(ocr_strategy),
+                reasoning_effort = VALUES(reasoning_effort)'
         );
 
         return $stmt->execute([
@@ -243,13 +251,14 @@ class AIConfigRepository
             (int) $payload['history_limit'],
             !empty($payload['accepts_image']) ? 1 : 0,
             $payload['ocr_strategy'],
+            $effort === '' ? null : $effort,
         ]);
     }
 
     public function resolvedModeConfig($modeKey)
     {
         $stmt = $this->pdo->prepare(
-            'SELECT mb.mode_key, mb.system_prompt, mb.history_strategy, mb.history_limit, mb.accepts_image, mb.ocr_strategy,
+            'SELECT mb.mode_key, mb.system_prompt, mb.history_strategy, mb.history_limit, mb.accepts_image, mb.ocr_strategy, mb.reasoning_effort,
                     m.id AS model_id, m.model_key, m.api_model, m.label AS model_label, m.temperature, m.max_tokens,
                     m.use_max_completion_tokens, m.supports_vision, p.id AS provider_id, p.provider_key, p.label AS provider_label,
                     p.driver, p.base_url, p.api_key_env_var

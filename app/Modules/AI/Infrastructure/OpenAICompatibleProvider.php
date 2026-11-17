@@ -175,14 +175,26 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
 
         if (!empty($modeConfig['useMaxCompletionTokens'])) {
             $payload['max_completion_tokens'] = (int) $modeConfig['maxTokens'];
-            if ($this->isReasoningModel($modeConfig['apiModel'])) {
-                $payload['reasoning_effort'] = 'high';
-            }
         } else {
             $payload['max_tokens'] = (int) $modeConfig['maxTokens'];
         }
 
+        $effort = $this->reasoningEffortFor($modeConfig);
+        if ($effort !== null) {
+            $payload['reasoning_effort'] = $effort;
+        }
+
         return $payload;
+    }
+
+    private function reasoningEffortFor(array $modeConfig)
+    {
+        $effort = strtolower(trim((string) ($modeConfig['reasoningEffort'] ?? '')));
+        if ($effort !== '' && $this->isReasoningModel($modeConfig['apiModel'])) {
+            return $effort;
+        }
+
+        return null;
     }
 
     private function buildResponsesPayload(array $modeConfig, array $messages)
@@ -194,8 +206,9 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
             'max_output_tokens' => (int) $modeConfig['maxTokens'],
         ];
 
-        if (!empty($modeConfig['useMaxCompletionTokens']) && $this->isReasoningModel($modeConfig['apiModel'])) {
-            $payload['reasoning'] = ['effort' => 'high'];
+        $effort = $this->reasoningEffortFor($modeConfig);
+        if ($effort !== null) {
+            $payload['reasoning'] = ['effort' => $effort];
         }
 
         return $payload;

@@ -55,11 +55,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
 View::render('admin/modes', [
     'pageTitle' => 'Mode Bindings',
-    'pageSubtitle' => 'Setiap mode publik memakai model dari katalog 9router.',
+    'pageSubtitle' => 'Pilih model OpenAI dan reasoning effort untuk setiap mode publik.',
     'currentPage' => 'modes',
     'currentUser' => $currentUser,
     'csrfToken' => Csrf::token(),
     'models' => $repository->allModels(),
+    'effortOptions' => array_merge(['' => 'Bawaan model'], array_combine(AIConfigRepository::REASONING_EFFORTS, AIConfigRepository::REASONING_EFFORTS)),
     'runtimeModes' => $modeResolver->frontendRuntimeConfig()['modes'],
     'successMessage' => $successMessage,
     'errorMessage' => $errorMessage,
