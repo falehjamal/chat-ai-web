@@ -19,11 +19,10 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
             throw new PublicException('API key provider tidak dikonfigurasi.');
         }
 
-        $useResponsesApi = ($modeConfig['providerKey'] ?? '') !== '9router'
-            && $this->requiresResponsesApi($modeConfig['apiModel']);
+        $useResponsesApi = $this->requiresResponsesApi($modeConfig['apiModel']);
         $payload = $useResponsesApi
             ? $this->buildResponsesPayload($modeConfig, $messages)
-            : $this->buildChatCompletionsPayload($modeConfig, $messages, ($modeConfig['providerKey'] ?? '') === '9router');
+            : $this->buildChatCompletionsPayload($modeConfig, $messages);
 
         $endpoint = $useResponsesApi ? '/responses' : '/chat/completions';
         $url = rtrim($modeConfig['providerBaseUrl'], '/') . $endpoint;
@@ -159,22 +158,11 @@ class OpenAICompatibleProvider implements ProviderAdapterInterface
         return in_array($normalized, [
             'your_openai_api_key_here',
             'sk-your-openai-api-key-here',
-            'sk-your-9router-key',
         ], true);
     }
 
-    private function buildChatCompletionsPayload(array $modeConfig, array $messages, $nineRouter = false)
+    private function buildChatCompletionsPayload(array $modeConfig, array $messages)
     {
-        if ($nineRouter) {
-            return [
-                'model' => $modeConfig['apiModel'],
-                'messages' => $messages,
-                'stream' => true,
-                'temperature' => (float) $modeConfig['temperature'],
-                'max_tokens' => (int) $modeConfig['maxTokens'],
-            ];
-        }
-
         $payload = [
             'model' => $modeConfig['apiModel'],
             'messages' => $messages,

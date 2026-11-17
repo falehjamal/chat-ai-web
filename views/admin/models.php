@@ -1,14 +1,4 @@
 <div class="panel">
-    <h2 style="margin-top: 0;">Katalog 9router</h2>
-    <p class="muted">Menghapus model lama lalu mengisi ulang dari <code>GET /v1/models</code> di 9router lokal. Binding mode tetap memakai prompt yang sudah ada.</p>
-    <form method="post">
-        <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken) ?>">
-        <input type="hidden" name="action" value="sync">
-        <button type="submit" class="btn">Sinkronkan dari 9router</button>
-    </form>
-</div>
-
-<div class="panel">
     <h2 style="margin-top: 0;"><?= !empty($editingModel) ? 'Edit Model' : 'Tambah Model' ?></h2>
     <form method="post">
         <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfToken) ?>">
@@ -39,19 +29,19 @@
             <div>
                 <label for="temperature">Temperature</label>
                 <input type="number" step="0.1" min="0" max="2" id="temperature" name="temperature" required value="<?= htmlspecialchars($editingModel['temperature'] ?? '0.3') ?>">
-                <p class="muted" style="margin-top: 6px; font-size: 13px;">Dikirim ke 9router sebagai temperature pada /v1/chat/completions.</p>
+                <p class="muted" style="margin-top: 6px; font-size: 13px;">Diabaikan untuk model reasoning (gpt-5 / o-series).</p>
             </div>
             <div>
                 <label for="max_tokens">Max Tokens</label>
                 <input type="number" min="1" id="max_tokens" name="max_tokens" required value="<?= htmlspecialchars($editingModel['max_tokens'] ?? '4096') ?>">
-                <p class="muted" style="margin-top: 6px; font-size: 13px;">Dikirim sebagai max_tokens. Nilai katalog 9router dibatasi 16384 saat sinkronisasi.</p>
+                <p class="muted" style="margin-top: 6px; font-size: 13px;">Dikirim sebagai max_completion_tokens atau max_tokens. Untuk model reasoning, token berpikir ikut dihitung.</p>
             </div>
             <div>
                 <label>
                     <input type="checkbox" name="use_max_completion_tokens" value="1" <?= !empty($editingModel['use_max_completion_tokens']) ? 'checked' : '' ?>>
                     Gunakan `max_completion_tokens`
                 </label>
-                <p class="muted" style="margin-top: 6px; font-size: 13px;">Biarkan nonaktif untuk 9router. Router lokal memakai max_tokens, bukan max_completion_tokens.</p>
+                <p class="muted" style="margin-top: 6px; font-size: 13px;">Aktifkan untuk model gpt-5 / o-series (wajib untuk model reasoning).</p>
             </div>
             <div>
                 <label>
@@ -75,7 +65,7 @@
 
 <div class="panel">
     <h2 style="margin-top: 0;">Daftar Model</h2>
-    <input type="search" id="model-filter" placeholder="Cari model 9router..." style="width: 100%; margin-bottom: 12px;">
+    <input type="search" id="model-filter" placeholder="Cari model..." style="width: 100%; margin-bottom: 12px;">
     <table>
         <thead>
         <tr>

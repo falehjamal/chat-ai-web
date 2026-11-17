@@ -2,7 +2,6 @@
 
 namespace App\Core;
 
-use App\Modules\AI\Application\NineRouterCatalogSync;
 use PDO;
 use PDOException;
 use Exception;
@@ -23,7 +22,6 @@ class DatabaseManager
 
         self::runMigrations();
         self::$booted = true;
-        self::ensureRouterCatalog();
     }
 
     public static function connection()
@@ -72,30 +70,5 @@ class DatabaseManager
             self::$rootPath . DIRECTORY_SEPARATOR . 'migrations'
         );
         $runner->run();
-    }
-
-    private static function ensureRouterCatalog()
-    {
-        $key = strtolower(trim((string) Env::get('NINEROUTER_KEY', '')));
-        if ($key === '' || $key === 'sk-your-9router-key') {
-            return;
-        }
-
-        try {
-            $count = (int) self::connection()->query('SELECT COUNT(*) FROM ai_models')->fetchColumn();
-        } catch (Exception $exception) {
-            error_log('[faleh-ai] Katalog model belum bisa dicek: ' . $exception->getMessage());
-            return;
-        }
-
-        if ($count >= 20) {
-            return;
-        }
-
-        try {
-            (new NineRouterCatalogSync())->sync();
-        } catch (Exception $exception) {
-            error_log('[faleh-ai] Sinkronisasi katalog 9router ditunda: ' . $exception->getMessage());
-        }
     }
 }

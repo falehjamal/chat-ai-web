@@ -2,12 +2,14 @@
 
 namespace App\Modules\Chat\Application;
 
-use App\Core\Env;
 use App\Modules\Admin\Infrastructure\AIConfigRepository;
 use App\Modules\Chat\Domain\PublicChatContract;
 
 class ModeConfigResolver
 {
+    const OPENAI_BASE_URL = 'https://api.openai.com/v1';
+    const OPENAI_API_KEY_ENV = 'OPENAI_API_KEY';
+
     private $configRepository;
 
     public function __construct()
@@ -44,8 +46,8 @@ class ModeConfigResolver
             'providerKey' => $resolved['provider_key'],
             'providerLabel' => $resolved['provider_label'],
             'providerDriver' => $resolved['driver'],
-            'providerBaseUrl' => $this->providerBaseUrl($resolved),
-            'providerApiKeyEnvVar' => $this->providerApiKeyEnvVar($resolved),
+            'providerBaseUrl' => self::OPENAI_BASE_URL,
+            'providerApiKeyEnvVar' => self::OPENAI_API_KEY_ENV,
         ];
     }
 
@@ -99,32 +101,11 @@ class ModeConfigResolver
             'maxTokens' => 4096,
             'useMaxCompletionTokens' => false,
             'supportsVision' => $modeKey === 'uas-math',
-            'providerKey' => '9router',
-            'providerLabel' => '9router',
+            'providerKey' => 'openai',
+            'providerLabel' => 'OpenAI',
             'providerDriver' => 'openai_compatible',
-            'providerBaseUrl' => rtrim((string) Env::get('NINEROUTER_URL', 'http://127.0.0.1:20128/v1'), '/'),
-            'providerApiKeyEnvVar' => 'NINEROUTER_KEY',
+            'providerBaseUrl' => self::OPENAI_BASE_URL,
+            'providerApiKeyEnvVar' => self::OPENAI_API_KEY_ENV,
         ];
-    }
-
-    private function providerBaseUrl(array $resolved)
-    {
-        if (($resolved['provider_key'] ?? '') === '9router') {
-            $fromEnv = trim((string) Env::get('NINEROUTER_URL', ''));
-            if ($fromEnv !== '') {
-                return rtrim($fromEnv, '/');
-            }
-        }
-
-        return rtrim($resolved['base_url'], '/');
-    }
-
-    private function providerApiKeyEnvVar(array $resolved)
-    {
-        if (($resolved['provider_key'] ?? '') === '9router') {
-            return 'NINEROUTER_KEY';
-        }
-
-        return $resolved['api_key_env_var'];
     }
 }
