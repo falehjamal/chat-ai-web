@@ -22,7 +22,7 @@ $appName = Env::get('APP_NAME', 'Faleh AI');
     <link rel="stylesheet" href="css/style.css">
     
     <!-- Lucide Icons - Modern & Lightweight -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
     
     <!-- MathJax for math formula rendering -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -84,19 +84,19 @@ $appName = Env::get('APP_NAME', 'Faleh AI');
             <input type="file" id="image-input" accept="image/*" style="display: none;">
             <div id="image-preview-container" style="display: none;">
                 <img id="image-preview" src="" alt="Preview">
-                <button id="remove-image" class="icon-btn-small" title="Hapus gambar">
+                <button id="remove-image" type="button" title="Hapus gambar">
                     <i data-lucide="x"></i>
                 </button>
             </div>
             <textarea id="user-input" placeholder="Ketik pesan..." rows="1"></textarea>
-            <button id="image-btn" class="icon-btn" title="Upload gambar untuk Mode OCR High" style="display: none;">
-                <i data-lucide="camera"></i>
+            <button id="image-btn" class="icon-btn" title="Unggah gambar untuk Mode OCR High" style="display: none;">
+                <i data-lucide="image-plus"></i>
             </button>
-            <button id="clear-btn" class="icon-btn" title="Klik: Hapus mode ini | Double-click: Hapus semua">
+            <button id="clear-btn" class="icon-btn" title="Klik: hapus riwayat mode ini | Klik kanan atau double-click: hapus semua">
                 <i data-lucide="trash-2"></i>
             </button>
-            <button id="send-btn" class="send-btn" title="Kirim pesan">
-                <i data-lucide="send"></i>
+            <button id="send-btn" type="button" title="Kirim pesan">
+                <i data-lucide="arrow-up"></i>
             </button>
         </div>
         <div id="ocr-progress">

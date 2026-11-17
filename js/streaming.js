@@ -1,4 +1,9 @@
 // Streaming chat functionality
+window.ICONS = {
+    copy: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>',
+    check: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>'
+};
+
 class StreamingChat {
     constructor() {
         this.isStreaming = false;
@@ -230,13 +235,13 @@ class StreamingChat {
             } else {
                 const $imageInfo = $('<div>')
                     .addClass('image-info')
-                    .html('<small style="color: #666; font-style: italic;">📷 Gambar soal matematika</small>');
+                    .html('<small>Gambar soal matematika</small>');
                 $messageContent.append($imageInfo);
             }
         } else {
             let displayMessage = message;
             if (hasImage) {
-                displayMessage = message ? `📷 ${message}` : '📷 Gambar soal matematika';
+                displayMessage = message ? `[Gambar] ${message}` : 'Gambar soal matematika';
             }
             const $messageText = $('<div>').addClass('message-text').text(displayMessage);
             $messageContent.append($messageText);
@@ -326,7 +331,7 @@ class StreamingChat {
             <div class="assistant-response">
                 <div class="assistant-response-body">${formattedHtml}</div>
                 <div class="message-toolbar">
-                    <button class="copy-btn" type="button" title="Copy response">Copy</button>
+                    <button class="copy-btn" type="button" title="Salin jawaban">${ICONS.copy}<span>Salin</span></button>
                 </div>
             </div>
         `);
@@ -352,9 +357,9 @@ class StreamingChat {
                 const codeText = $(this).closest('.code-block-wrapper').find('code').text();
                 try {
                     await navigator.clipboard.writeText(codeText);
-                    $(this).addClass('copied').text('Copied').css('background', '#0f172a');
+                    $(this).addClass('copied').html(`${ICONS.check}<span>Tersalin</span>`);
                     setTimeout(() => {
-                        $(this).removeClass('copied').text('Copy').css('background', '');
+                        $(this).removeClass('copied').html(`${ICONS.copy}<span>Salin</span>`);
                     }, 2000);
                 } catch (err) {
                     const textArea = document.createElement('textarea');
@@ -381,9 +386,9 @@ class StreamingChat {
                 await navigator.clipboard.writeText(originalText);
                 const btn = $(this);
                 const originalBtnText = btn.text() || 'Copy';
-                btn.addClass('copied').text('Copied!').css('background', '#10b981');
+                btn.addClass('copied').html(`${ICONS.check}<span>Tersalin</span>`);
                 setTimeout(() => {
-                    btn.removeClass('copied').text(originalBtnText).css('background', '');
+                    btn.removeClass('copied').html(`${ICONS.copy}<span>Salin</span>`);
                 }, 2000);
             } catch (err) {
                 const textArea = document.createElement('textarea');
@@ -394,9 +399,9 @@ class StreamingChat {
                 document.body.removeChild(textArea);
 
                 const btn = $(this);
-                btn.text('Copied!').css('background', '#10b981');
+                btn.addClass('copied').html(`${ICONS.check}<span>Tersalin</span>`);
                 setTimeout(() => {
-                    btn.text('Copy').css('background', '');
+                    btn.removeClass('copied').html(`${ICONS.copy}<span>Salin</span>`);
                 }, 2000);
             }
         });

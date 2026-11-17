@@ -221,7 +221,7 @@ $(document).ready(async function() {
         } else {
             $imageBtn.hide();
             $imagePreviewContainer.hide();
-            $userInput.attr('placeholder', 'Type your message...');
+            $userInput.attr('placeholder', 'Ketik pesan...');
             currentImage = null;
             currentImageId = null;
         }
@@ -440,7 +440,7 @@ $(document).ready(async function() {
                         // Add image info
                         const $imageInfo = $('<div>')
                             .addClass('image-info')
-                            .html('<small>📷 Gambar soal matematika</small>');
+                            .html('<small>Gambar soal matematika</small>');
                         $messageContent.append($imageInfo);
                         
                         // Add text if available
@@ -450,7 +450,7 @@ $(document).ready(async function() {
                         }
                     } else {
                         // Fallback if image not found
-                        $messageText.text(`📷 ${msg.text}`);
+                        $messageText.text(`[Gambar] ${msg.text}`);
                         $messageContent.append($messageText);
                     }
                 } else {
@@ -476,7 +476,7 @@ $(document).ready(async function() {
             <div class="assistant-response">
                 <div class="assistant-response-body">${formattedText}</div>
                 <div class="message-toolbar">
-                    <button class="copy-btn" type="button" title="Copy response">Copy</button>
+                    <button class="copy-btn" type="button" title="Salin jawaban">${window.ICONS.copy}<span>Salin</span></button>
                     ${metaHtml}
                 </div>
             </div>
@@ -493,18 +493,10 @@ $(document).ready(async function() {
             try {
                 await navigator.clipboard.writeText(originalText);
                 
-                // Visual feedback
                 const btn = $(this);
-                const originalBtnText = btn.text() || 'Copy';
-                
-                btn.addClass('copied')
-                   .text('Copied!')
-                   .css('background', '#10b981');
-                
+                btn.addClass('copied').html(`${window.ICONS.check}<span>Tersalin</span>`);
                 setTimeout(() => {
-                    btn.removeClass('copied')
-                       .text(originalBtnText)
-                       .css('background', '');
+                    btn.removeClass('copied').html(`${window.ICONS.copy}<span>Salin</span>`);
                 }, 2000);
                 
             } catch (err) {
@@ -518,11 +510,10 @@ $(document).ready(async function() {
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
                 
-                // Visual feedback for fallback
                 const btn = $(this);
-                btn.text('Copied!').css('background', '#10b981');
+                btn.addClass('copied').html(`${window.ICONS.check}<span>Tersalin</span>`);
                 setTimeout(() => {
-                    btn.text('Copy').css('background', '');
+                    btn.removeClass('copied').html(`${window.ICONS.copy}<span>Salin</span>`);
                 }, 2000);
             }
         });
@@ -680,9 +671,11 @@ $(document).ready(async function() {
                 }
 
                 const skipUserMessage = false;
+                const imageToSend = currentImage;
+                const imageIdToSave = currentImageId;
                 
                 // OCR High mode: Tanpa history, setiap chat independen
-                streamingChat.sendMathMessageWithStreaming(userMessage, [], streamEndpoint, selectedModel, currentImage, (fullResponse) => {
+                streamingChat.sendMathMessageWithStreaming(userMessage, [], streamEndpoint, selectedModel, imageToSend, (fullResponse) => {
                     
                     // Add messages to history after streaming completes
                     chatHistory = getCurrentChatHistory();
@@ -691,8 +684,8 @@ $(document).ready(async function() {
                     const userMessageForHistory = {
                         sender: 'user', 
                         text: userMessage || 'Gambar soal matematika',
-                        hasImage: !!currentImage,
-                        imageId: currentImageId,
+                        hasImage: !!imageToSend,
+                        imageId: imageIdToSave,
                         timestamp: new Date().toISOString()
                     };
                     
@@ -708,12 +701,13 @@ $(document).ready(async function() {
                     
                     saveChatHistory();
                     
-                    // Clear image after sending
-                    clearImagePreview();
-                    
                     // Re-enable send button
                     $sendBtn.prop('disabled', false).removeClass('btn-loading');
                 }, skipUserMessage);
+
+                // User message already has its own image in the chat list.
+                // Clear the composer immediately while the response streams.
+                clearImagePreview();
             } else {
                 streamingChat.sendMessageWithStreaming(userMessage, recentHistory, streamEndpoint, selectedModel, (fullResponse) => {
                     // Add messages to history after streaming completes
@@ -839,7 +833,7 @@ $(document).ready(async function() {
                     
                     // Add error message to chat
                     chatHistory = getCurrentChatHistory();
-                    chatHistory.push({ sender: 'bot', text: '⚠️ Maaf, terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi.' });
+                    chatHistory.push({ sender: 'bot', text: 'Maaf, terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi.' });
                     
                     // Update the appropriate history array
                     switch(currentMode) {
@@ -946,18 +940,17 @@ $(document).ready(async function() {
 
     // Function to clear comprehensive cache and storage with advanced options
     function clearComprehensiveCache() {
-        const confirmMessage = `🧹 CLEAR ALL CACHE & STORAGE
-        
-Ini akan menghapus:
-✓ Semua riwayat chat (Mode Chat, OCR Low, OCR High)
-✓ Preferensi model dan pengaturan
-✓ Cache browser dan temporary files
-✓ Session storage dan cookies (jika ada)
-✓ Service worker cache (jika ada)
-✓ IndexedDB storage (jika ada)
+        const confirmMessage = `Hapus semua cache dan data?
 
-⚠️ PERINGATAN: Tindakan ini tidak dapat dibatalkan!
-⚠️ Anda akan kembali ke pengaturan awal.
+Ini akan menghapus:
+- Semua riwayat chat (Mode Chat, OCR Low, OCR High)
+- Preferensi model dan pengaturan
+- Cache browser dan temporary files
+- Session storage dan cookies (jika ada)
+- Service worker cache (jika ada)
+- IndexedDB storage (jika ada)
+
+Tindakan ini tidak dapat dibatalkan dan aplikasi akan kembali ke pengaturan awal.
 
 Lanjutkan?`;
 
@@ -966,7 +959,7 @@ Lanjutkan?`;
                 // Show loading indicator
                 const $clearCacheBtn = $('#clear-cache-btn');
                 const originalText = $clearCacheBtn.html();
-                $clearCacheBtn.html('🔄 Clearing...').prop('disabled', true);
+                $clearCacheBtn.prop('disabled', true);
 
                 // Clear all localStorage
                 localStorage.clear();
@@ -1017,30 +1010,21 @@ Lanjutkan?`;
                 
                 // Success feedback
                 setTimeout(() => {
-                    $clearCacheBtn.html('✅ Cleared!').css('background', '#10b981');
+                    $clearCacheBtn.prop('disabled', false);
                     
-                    setTimeout(() => {
-                        $clearCacheBtn.html(originalText).css('background', '').prop('disabled', false);
-                        
-                        // Show comprehensive success message
-                        alert(`✅ PEMBERSIHAN SELESAI!
+                    alert(`Pembersihan selesai.
 
-🗑️ Berhasil dihapus:
-• ${Object.keys(localStorage).length || 0}+ localStorage items
-• ${Object.keys(sessionStorage).length || 0}+ sessionStorage items  
-• Semua riwayat chat (3 mode)
-• Cache browser dan temporary files
-• Pengaturan dan preferensi
+Berhasil dihapus:
+- Semua riwayat chat (3 mode)
+- Cache browser dan temporary files
+- Pengaturan dan preferensi
 
-🔄 Aplikasi telah direset ke pengaturan awal.
-💡 Silakan mulai chat baru!`);
-                        
-                    }, 2000);
+Aplikasi telah direset ke pengaturan awal. Silakan mulai chat baru.`);
                 }, 1000);
                 
             } catch (error) {
                 console.error('Error clearing comprehensive cache:', error);
-                alert('❌ Terjadi kesalahan saat membersihkan cache.\nSilakan refresh halaman dan coba lagi.');
+                alert('Terjadi kesalahan saat membersihkan cache.\nSilakan refresh halaman dan coba lagi.');
                 
                 // Reset button state
                 $('#clear-cache-btn').html(originalText).prop('disabled', false);

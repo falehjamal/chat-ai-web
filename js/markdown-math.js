@@ -160,7 +160,7 @@ class MarkdownMathRenderer {
 <div class="code-block-wrapper">
     <div class="code-block-header">
         <span class="code-lang">${label}</span>
-        <button class="code-copy-btn" type="button" title="Copy code">Copy</button>
+        <button class="code-copy-btn" type="button" title="Salin kode">${window.ICONS ? window.ICONS.copy : ''}<span>Salin</span></button>
     </div>
     <pre><code${languageClass}>${escapedCode}</code></pre>
 </div>`.trim();
